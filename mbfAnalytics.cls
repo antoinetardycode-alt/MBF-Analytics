@@ -1,14 +1,5 @@
-VERSION 1.0 CLASS
-BEGIN
-  MultiUse = -1  'True
-END
-Attribute VB_Name = "mbfAnalytics"
-Attribute VB_GlobalNameSpace = False
-Attribute VB_Creatable = False
-Attribute VB_PredeclaredId = False
-Attribute VB_Exposed = False
 ' MBF Analytics
-' Banque de méthodes Données financières en ligne
+' Banque de mÃ©thodes DonnÃ©es financiÃ¨res en ligne
 ' Simple utilisation
 ' Robuste
 ' Personnalisable API Key
@@ -26,20 +17,20 @@ Attribute VB_Exposed = False
 ' Constantes des la classe
 Private Const keylen As Integer = 50
 
-' Propriétés de la classe
-Private apikey As String    ' code perso pour se connecter à Rapid API
-Private h As Object         ' h objet pour les requêtes HTTP
-Public status As String     ' état de la connection avec Rapid API :
+' PropriÃ©tÃ©s de la classe
+Private apikey As String    ' code perso pour se connecter Ã  Rapid API
+Private h As Object         ' h objet pour les requÃªtes HTTP
+Public status As String     ' Ã©tat de la connection avec Rapid API :
                             ' ok : tout va bien
-                            ' API Key invalide : problème de clé API
-                            ' Compte épuisé : plus de requêtes possible
-                            ' Paramètres de requête incohérents : Invalid request
+                            ' API Key invalide : problÃ¨me de clÃ© API
+                            ' Compte Ã©puisÃ© : plus de requÃªtes possible
+                            ' ParamÃ¨tres de requÃªte incohÃ©rents : Invalid request
                             ' Endpoint Inconnue : Endpoint * does not exist
                             ' Erreur non reconnue
                             
 
 ' ******************
-' Méthodes Internes
+' MÃ©thodes Internes
 ' ******************
 ' Constructeur de la classe
 Private Sub Class_Initialize()
@@ -63,17 +54,17 @@ Public Sub initKey(key As String)
 
 End Sub
 
-' Batterie de test des erreurs possibles du résultat des requêtes
+' Batterie de test des erreurs possibles du rÃ©sultat des requÃªtes
 ' ** Evolutive **
 Private Sub testErreur(Optional ByVal resultat As String = "")
     
     If resultat Like "*" & "Endpoint * does not exist" & "*" Then status = "Endpoint inconnue"
     
-    If resultat Like "*" & "Invalid request" & "*" Then status = "Paramètres de requête incohérents"
+    If resultat Like "*" & "Invalid request" & "*" Then status = "ParamÃ¨tres de requÃªte incohÃ©rents"
 
-    If resultat Like "*" & "Wrong * parameter" & "*" Then status = "Paramètres de requête incohérents"
+    If resultat Like "*" & "Wrong * parameter" & "*" Then status = "ParamÃ¨tres de requÃªte incohÃ©rents"
     
-    ' ajouter ses propres détctions d'erreur ici et signaler l'auteur et l'objectif
+    ' ajouter ses propres dÃ©tctions d'erreur ici et signaler l'auteur et l'objectif
     ' By XXXXX Objet YYYYY
     ' If resultat Like "*" & "??????" & "*" Then status = "?????"
     
@@ -85,7 +76,7 @@ Private Sub testErreur(Optional ByVal resultat As String = "")
 
 End Sub
 
-' Fonction de recherche ou création d'une feuille Excel nommée
+' Fonction de recherche ou crÃ©ation d'une feuille Excel nommÃ©e
 Private Function getOrCreateSheet(ByVal sheetname As String) As Worksheet
     Dim w As Worksheet
     
@@ -106,18 +97,18 @@ End Function
 
 ' ***********************************************
 ' ***********************************************
-' Collection de Méthodes financières de la classe
+' Collection de MÃ©thodes financiÃ¨res de la classe
 ' ***********************************************
 ' ***********************************************
 
 
 ' *************************************
-' Composantes financières d'une société
+' Composantes financiÃ¨res d'une sociÃ©tÃ©
 ' *************************************
 ' Auteur : Yves Bertini
 ' Lien page API : https://rapidapi.com/vibapidev/api/bloomberg-real-time/playground/apiendpoint_ac53fec3-fbdc-4a73-ba91-1217728e55c9
 ' Params avec valeur d'exemple :
-'  sheetname = "bloomberg_financials" nom de la feuille crée
+'  sheetname = "bloomberg_financials" nom de la feuille crÃ©e
 '  symbol ou id = "ORA:FP"  Orange sur bourse de Paris France Paris, ticker Bloomberg
 '  currencyname = "EUR"     Euros
 '
@@ -126,15 +117,15 @@ Public Sub bloomberg_financials(Optional ByVal sheetname = "bloomberg_financials
     ' Etat de la connexion Rapide API
     Call testErreur
     
-    ' Parties de la Requête à l'API
+    ' Parties de la RequÃªte Ã  l'API
     hote = "bloomberg-real-time.p.rapidapi.com"
-    epqs = "/stocks/financials?query=SYMBOL&currency=CURRENCYNAME" ' avec mot générique pour les paramètres
+    epqs = "/stocks/financials?query=SYMBOL&currency=CURRENCYNAME" ' avec mot gÃ©nÃ©rique pour les paramÃ¨tres
     
     ' Encodage URL des PARAMS
     symbol = WorksheetFunction.EncodeURL(symbol)
     currencyname = WorksheetFunction.EncodeURL(currencyname)
     
-    ' Intégration des PARAMS dans la Query String
+    ' IntÃ©gration des PARAMS dans la Query String
     epqs = Replace(epqs, "SYMBOL", symbol)
     epqs = Replace(epqs, "CURRENCYNAME", currencyname)
         
@@ -145,7 +136,7 @@ Public Sub bloomberg_financials(Optional ByVal sheetname = "bloomberg_financials
  
     Debug.Print s
     
-    ' Batterie de test d'erreur sur resultat de la requête
+    ' Batterie de test d'erreur sur resultat de la requÃªte
     Call testErreur(resultat:=s)
     
     If status <> "ok" Then
@@ -153,29 +144,29 @@ Public Sub bloomberg_financials(Optional ByVal sheetname = "bloomberg_financials
         Exit Sub
     End If
         
-    ' Déchiffrement expression JSON en objet VBA
+    ' DÃ©chiffrement expression JSON en objet VBA
     
     Dim o As Object
     Set o = JsonConverter.ParseJson(s)
 
     ' Chargement sur feuille Excel
     
-    ' recherche feuille Excel ou création feuille
+    ' recherche feuille Excel ou crÃ©ation feuille
     Set w = getOrCreateSheet(sheetname)
     
     ' Purger la feuille
     w.Cells.Clear
     
-    ' Inscrire les paramètres de la requête API
+    ' Inscrire les paramÃ¨tres de la requÃªte API
     w.[A1] = o("data")(3)("securityID")
     w.[B1] = currencyname
     
     
-    ' Puis écrire toutes les informationss
+    ' Puis Ã©crire toutes les informationss
     
     ' Income Statement, Balance Sheet, CashFlow
     n1 = 0
-    For k = 1 To o("data").Count        ' tous les for avec extrémité Count
+    For k = 1 To o("data").Count        ' tous les for avec extrÃ©mitÃ© Count
         
         Set co = w.[A2].Rows(2 + n1)  ' cellule origine du tableau
         co.Value = o("data")(k)("name"): n = n + 1
@@ -210,15 +201,15 @@ End Sub
 
 
 ' ***************************************
-' Historique récent des Cotation de titre
+' Historique rÃ©cent des Cotation de titre
 ' ***************************************
 ' Auteur : Yves Bertini
 ' Lien vers la page API : https://rapidapi.com/StoxApi/api/real-time-quotes1/playground/endpoint_c974b05a-9606-45c7-a541-5295f24857c2
 ' Params avec valeur d'exemple :
-'  sheetname = "real_time_quotes1" nom de la feuille crée
+'  sheetname = "real_time_quotes1" nom de la feuille crÃ©e
 '  interval = "4hour" ou 1min 5min 15min 30min 1hour 4hour
 '  symbol = "ORA.PA"  Orange sur bourse de Paris France Paris, ticker Yahoo Finance
-'  from  = "2025-01-01"     date de départ ISO en texte, FR UTC+1
+'  from  = "2025-01-01"     date de dÃ©part ISO en texte, FR UTC+1
 '  until  = "2025-11-01"     date de fin ISO en texte, FR UTC+1
 '
 ' Exemple
@@ -228,14 +219,14 @@ Public Sub real_time_quotes1(Optional ByVal sheetname = "real_time_quotes1", Opt
     ' Etat de la connexion Rapide API
     Call testErreur
     
-    ' Parties de la Requête à l'API
+    ' Parties de la RequÃªte Ã  l'API
     ' Hote
     hote = "real-time-quotes1.p.rapidapi.com"
-    ' Endpoint?Query String avec Paramètres génériques en majuscule
+    ' Endpoint?Query String avec ParamÃ¨tres gÃ©nÃ©riques en majuscule
     epqs = "/api/v2/historical/stock?interval=INTERVAL&symbol=SYMBOL&from=FROMDT&until=UNTILDT"
     
     
-    ' Intégration des PARAMS dans la Query String
+    ' IntÃ©gration des PARAMS dans la Query String
     ' Replace sensible MAJ MIN
     epqs = Replace(epqs, "INTERVAL", interval)
     epqs = Replace(epqs, "SYMBOL", symbol)
@@ -249,7 +240,7 @@ Public Sub real_time_quotes1(Optional ByVal sheetname = "real_time_quotes1", Opt
  
     Debug.Print s
     
-    ' Batterie de test d'erreur sur resultat de la requête
+    ' Batterie de test d'erreur sur resultat de la requÃªte
     Call testErreur(resultat:=s)
     
     If status <> "ok" Then
@@ -257,20 +248,20 @@ Public Sub real_time_quotes1(Optional ByVal sheetname = "real_time_quotes1", Opt
         Exit Sub
     End If
         
-    ' Déchiffrement expression JSON en objet VBA
+    ' DÃ©chiffrement expression JSON en objet VBA
     
     Dim o As Object
     Set o = JsonConverter.ParseJson(s)
 
     ' Chargement sur feuille Excel
     
-    ' recherche feuille Excel ou création feuille
+    ' recherche feuille Excel ou crÃ©ation feuille
     Set w = getOrCreateSheet(sheetname)
     
     ' Purger la feuille
     w.Cells.Clear
     
-    ' Inscrire les paramètres de la requête API
+    ' Inscrire les paramÃ¨tres de la requÃªte API
     w.[A1] = symbol
     w.[B1] = interval
     w.[C1] = fromdt
@@ -293,22 +284,22 @@ End Sub
 
 
 ' *************************************
-' Méthode générique à personnaliser
+' MÃ©thode gÃ©nÃ©rique Ã  personnaliser
 ' *************************************
 ' Auteur : ** les auteurs **
 ' Lien vers la page API : https://rapidapi.com/...
 ' Params avec valeur d'exemple :
-'  sheetname = " ** nom de la méthode ** " nom de la feuille crée
+'  sheetname = " ** nom de la mÃ©thode ** " nom de la feuille crÃ©e
 '  params1 = "exemple1"
 '  params2 = "exemple2"
 '
 Public Sub maMethode(Optional ByVal sheetname = " ** maMethode ** ", Optional ByVal monparam1 = "exemple1", Optional ByVal monparam2 = "exemple2")
     
-    ' Parties de la Requête à l'API
+    ' Parties de la RequÃªte Ã  l'API
     ' Hote
-    hote = " ** mettre son nom d'hôte ici ** "
-    ' Endpoint?Query String avec Paramètres génériques en majuscule
-    epqs = "/ ** son endpoint ? param1=PARAM1&param2=PARAM2" ' avec mot générique pour les paramètres
+    hote = " ** mettre son nom d'hÃ´te ici ** "
+    ' Endpoint?Query String avec ParamÃ¨tres gÃ©nÃ©riques en majuscule
+    epqs = "/ ** son endpoint ? param1=PARAM1&param2=PARAM2" ' avec mot gÃ©nÃ©rique pour les paramÃ¨tres
     
     ' Encodage URL des PARAMS
     symbol = WorksheetFunction.EncodeURL(symbol)
@@ -317,7 +308,7 @@ Public Sub maMethode(Optional ByVal sheetname = " ** maMethode ** ", Optional By
     ' Etat de la connexion Rapide API
     Call testErreur
         
-    ' Intégration des PARAMS dans la Query String
+    ' IntÃ©gration des PARAMS dans la Query String
     epqs = Replace(epqs, "PARAM1", monparam1)
     epqs = Replace(epqs, "PARAM2", monparam2)
         
@@ -328,7 +319,7 @@ Public Sub maMethode(Optional ByVal sheetname = " ** maMethode ** ", Optional By
  
     Debug.Print s
     
-    ' Batterie de test d'erreur sur resultat de la requête
+    ' Batterie de test d'erreur sur resultat de la requÃªte
     Call testErreur(resultat:=s)
     
     If status <> "ok" Then
@@ -336,27 +327,28 @@ Public Sub maMethode(Optional ByVal sheetname = " ** maMethode ** ", Optional By
         Exit Sub
     End If
         
-    ' Déchiffrement expression JSON en objet VBA
+    ' DÃ©chiffrement expression JSON en objet VBA
     
     Dim o As Object
     Set o = JsonConverter.ParseJson(s)
 
     ' Chargement sur feuille Excel
     
-    ' recherche feuille Excel ou création feuille
+    ' recherche feuille Excel ou crÃ©ation feuille
     Set w = getOrCreateSheet(sheetname)
     
     ' Purger la feuille
     w.Cells.Clear
     
-    ' Inscrire les paramètres de la requête API
+    ' Inscrire les paramÃ¨tres de la requÃªte API
     w.[A1] = param1
     w.[B1] = param2
     
     
-    ' Puis écire toutes les informations sur la feuille w
+    ' Puis Ã©cire toutes les informations sur la feuille w
     ' ...
     
 End Sub
+
 
 
