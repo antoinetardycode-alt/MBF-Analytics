@@ -7,3 +7,11 @@ Team Mad Market
 - Gekko
 - Lien API : https://rapidapi.com/vibapidev/api/bloomberg-real-time/playground/apiendpoint_ac53fec3-fbdc-4a73-ba91-1217728e55c9
 - Description : Indicateurs financiers annuel et trimestriels
+
+
+
+
+TUG
+-Tugdual Pothier
+-Baptiste Napias
+-Quentin Lemesnager
