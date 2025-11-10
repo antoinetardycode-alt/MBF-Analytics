@@ -129,7 +129,7 @@ End Sub
 '  symbol ou id = "ORA:FP"  Orange sur bourse de Paris France Paris, ticker Bloomberg
 '  currencyname = "EUR"     Euros
 ' Retour :
-'  feuille excel sheetname
+'  résultats formatés sur feuille excel sheetname
 '
 ' Exemple invocation Bloomberg Financial
 '    Call m.bloomberg_financials(sheetname:="Orange Soc", symbol:="ORA:FP", currencyname:="EUR")
@@ -234,7 +234,7 @@ End Sub
 '  from  = "2025-01-01"     date de départ ISO en texte, FR UTC+1
 '  until  = "2025-11-01"     date de fin ISO en texte, FR UTC+1
 ' Retour :
-'  feuille excel sheetname
+'  résultats formatés sur feuille excel sheetname
 '
 ' Exemple invocation  Time Quotes1
 ' Call m.real_time_quotes1(sheetname:="Orange Sto", interval:="4hour", symbol:="ORA.PA", fromdt:="2025-06-01", untildt:="2025-11-01")
@@ -317,6 +317,8 @@ End Sub
 '  sheetname = " ** nom de la méthode ** " nom de la feuille crée
 '  params1 = "exemple1"
 '  params2 = "exemple2"
+' Retour :
+'  résultats formatés sur feuille excel sheetname
 '
 Public Sub maMethode(Optional ByVal sheetname = " ** maMethode ** ", Optional ByVal monparam1 = "exemple1", Optional ByVal monparam2 = "exemple2")
     
@@ -374,5 +376,3 @@ Public Sub maMethode(Optional ByVal sheetname = " ** maMethode ** ", Optional By
     ' ...
     
 End Sub
-
-
