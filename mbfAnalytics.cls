@@ -104,7 +104,7 @@ Private Sub testErreur(Optional ByVal resultat As String = "")
         
     If resultat Like "*" & "data"":null" & "*" Then status = "Pas de résultats. Vérifier les paramètres"
     
-    If resultat Like "*" & "have exceeded * quota" & "*" Then status = "Quota de requêtes dépassé."
+    If resultat Like "*" & "have exceeded * quota" & "*" Then status = "Quota de requêtes dépassé"
     
     ' ajouter ses propres détctions d'erreur ici et signaler l'auteur et l'objectif
     ' By XXXXX Objet YYYYY
@@ -376,3 +376,4 @@ Public Sub maMethode(Optional ByVal sheetname = " ** maMethode ** ", Optional By
     ' ...
     
 End Sub
+
