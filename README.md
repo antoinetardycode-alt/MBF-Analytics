@@ -10,7 +10,6 @@
 Le but est d’offrir une bibliothèque **facile à utiliser** et **robuste**, permettant aux utilisateurs d’Excel de :
 
 - récupérer des **données financières externes** (actions, devises, indices, etc.),
-- exécuter des **calculs et analyses financières** directement dans Excel,
 - tout en restant **100 % VBA natif**, sans dépendances externes lourdes.
 
 ---
