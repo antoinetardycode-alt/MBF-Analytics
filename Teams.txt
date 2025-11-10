@@ -66,8 +66,8 @@ VAL
 - Phuong Linh NHU
 - Vanessa JIN
 - Agathe CANEL
-
-
+Lien APi : https://yahoo-finance-real-time1.p.rapidapi.com/stock/get-options?symbol=WOOF&lang=en-US&region=US
+Description : Retourne les informations d'options (calls, puts, dates d'expiration, prix d'exercice etc) pour l'action WOOF en temps réel
 
 L&J
 Lilou Droulers
