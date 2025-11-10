@@ -10,6 +10,9 @@ Team Mad Market
 
 
 
+PNL maker
+- Alexandre Castagna
+- Arnaud Capra
 
 TUG
 -Tugdual Pothier
