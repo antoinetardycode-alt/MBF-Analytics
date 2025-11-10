@@ -38,7 +38,7 @@ Sub test_MBFanalytics()
     Set m = New mbfAnalytics
     
     ' Inscrire sa propre clé
-    m.initKey "61a372d229msh11f8c1fb5eb3b70p1827d1jsn4b6601ac...."
+    m.initKey "XXXXXXX"
     
     ' Test Bloomberg Financial
     Call m.bloomberg_financials(sheetname:="Orange Soc", symbol:="ORA:FP", currencyname:="EUR")
