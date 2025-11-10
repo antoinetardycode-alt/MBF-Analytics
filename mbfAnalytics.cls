@@ -354,3 +354,9 @@ Public Sub maMethode(Optional ByVal sheetname = " ** maMethode ** ", Optional By
     
 End Sub
 
+' *************************************
+' *************************************
+' *** Ajouter ses contributions ici ***
+' *************************************
+' *************************************
+
