@@ -21,7 +21,9 @@ TUG
 
 Team Babouskoff
 - Yanis AYIK
-- Pierre-alexandre Vergé
+- Pierre-alexandre Vergé Percie-Du-Sert
+- Lien API : 
+- Description : 
 
 Team OA
 - Ornnella Creignou
