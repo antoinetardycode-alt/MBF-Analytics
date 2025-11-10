@@ -30,7 +30,7 @@ Team Babouskoff
 - Yanis Ayik
 - Pierre-Alexandre Vergé Percie-Du-Sert
 - Lien API : https://rapidapi.com/kinduvarma/api/stock-sentiment-api/playground/apiendpoint_9b229260-d840-4054-88a1-ec55e893b756
-- Description : 
+- Description : Renvoie une liste d'articles liés à l'action saisie et leur score de sentiment associé. Ce score est dit composite.
 
 Team OA
 - Ornnella Creignou
