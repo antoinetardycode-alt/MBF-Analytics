@@ -18,8 +18,8 @@ Le but est d’offrir une bibliothèque **facile à utiliser** et **robuste**, p
 
 | Type de méthode | Exemple | Description |
 |------------------|----------|--------------|
-| 💰 Indicateurs financiers | `Call m.bloomberg_financials(sheetname:="Orange Soc", symbol:="ORA:FP", currencyname:="EUR")` |  Télécharge les indicateurs classiques annuels et trimestriels |
-| 🧾 Historique des cotations | `Call m.real_time_quotes1(sheetname:="Orange Sto", interval:="4hour", symbol:="ORA.PA", fromdt:="2025-06-01", untildt:="2025-11-01")` | Télécharge l'historique récent des cotations |
+| Indicateurs financiers | `Call m.bloomberg_financials(sheetname:="Orange Soc", symbol:="ORA:FP", currencyname:="EUR")` |  Télécharge les indicateurs classiques annuels et trimestriels |
+| Historique des cotations | `Call m.real_time_quotes1(sheetname:="Orange Sto", interval:="4hour", symbol:="ORA.PA", fromdt:="2025-06-01", untildt:="2025-11-01")` | Télécharge l'historique récent des cotations |
 
 Toutes les méthodes sont :
 - 🔍 **Simples à utiliser** (appel direct depuis Excel, illustré d'un exemple complet)
