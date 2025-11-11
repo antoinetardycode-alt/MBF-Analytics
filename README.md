@@ -31,7 +31,7 @@ Toutes les méthodes sont :
 
 ## 🚀 Exemple d’utilisation
 
-```vba
+```
 Sub test_MBFanalytics()
 
     Dim m As mbfAnalytics
@@ -47,4 +47,6 @@ Sub test_MBFanalytics()
     Call m.real_time_quotes1(sheetname:="Orange Sto", interval:="4hour", symbol:="ORA.PA", fromdt:="2025-06-01", untildt:="2025-11-01")
     
 End Sub
+```
 
+<p align="center">© MBF Assas — 2025</p>
