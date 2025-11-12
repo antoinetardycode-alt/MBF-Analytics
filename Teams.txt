@@ -72,7 +72,7 @@ VAL
 - Phuong Linh NHU
 - Vanessa JIN
 - Agathe CANEL
-Lien APi : https://yahoo-finance-real-time1.p.rapidapi.com/stock/get-options?symbol=WOOF&lang=en-US&region=US
+Lien APi : https://rapidapi.com/3b-data-3b-data-default/api/yahoo-finance-real-time1/playground/apiendpoint_00691d4c-5c21-4972-8560-4c03880ebc7f
 Description : Recupérer une liste d'options (calls, puts, dates d'expiration, prix d'exercice etc) en temps réel
 
 L&J
