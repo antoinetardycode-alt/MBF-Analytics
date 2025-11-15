@@ -13,6 +13,8 @@ AAA
 - Axelle Bouy
 - Tim Hembise
 - Lien API: https://indian-stock-exchange-api2.p.rapidapi.com/stock_forecasts?stock_id=TCS&measure_code=EPS&period_type=Annual&data_type=Actuals&age=Current
+- (yves) donner le lien du "playground"
+https://rapidapi.com/linuz/api/indian-stock-exchange-api2/playground/apiendpoint_962a5600-56fe-4fec-83a8-a628eb8c6c2e?env=undefined 
 - Description: obtenir les previsions de l'EPS (earning per share)
 
 PNL maker
