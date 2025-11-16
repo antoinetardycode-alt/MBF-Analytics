@@ -57,8 +57,8 @@ Team SA
 Team SantaCruz
 - Valentin Grange
 - Marion Neveu-Perret
-- Lien API : https://rapidapi.com/ousema.frikha/api/forex-factory-scraper1
-- Liste des événements macro-économiques publiés (pays, devise, importance, prévisions, chiffres précédents et réels) pour une date donnée.
+- Lien API : https://rapidapi.com/yasimpratama88/api/economic-calendar-api/playground/apiendpoint_401c70ac-3049-4e50-8004-9c636edfc201
+- Permet d'obtenir une liste des événements macro-économiques publiés entre deux dates données (par pays, devise, importance, avec les prévisions, chiffres précédents et réels).
 
 MNT 
 - Mathieu Touet
