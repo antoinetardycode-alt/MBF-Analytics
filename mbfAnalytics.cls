@@ -1053,6 +1053,115 @@ End Sub
 
 
 
+****************************************
+' Extraire les données des 10 cryptos majeures
+' *************************************
+' Auteur : Quentin Lemesnager, Tugdual Pothier, Kyan Moussavi, Baptiste Napias
+' Lien vers la page API : https://rapidapi.com/tonyapi9892/api/investing-com6/playground/apiendpoint_04043732-9deb-445f-af95-d05a3680ea68
+' Params avec valeur d'exemple :
+'  sheetname = "CryptoMajors" nom de la feuille crée
+'  params1 = "limit"
+' Retour :
+'  résultats formatés sur feuille excel sheetname
+'
+Public Sub CryptoMajors(Optional ByVal sheetname As String = "CryptoMajors ", Optional ByVal limit As Long = 10)
+    
+    'Declarations
+    Dim epqs As String
+    Dim i As Long, c As Long
+    Dim hote As String
+    Dim hApi As Variant
+    Dim s As String
+    Dim w As Worksheet
+    Dim u As String
+    
+
+    
+    ' Parties de la Requête à l'API
+    ' Hote
+    hote = "investing-com6.p.rapidapi.com"
+    ' Endpoint?Query String avec Paramètres génériques en majuscule
+    epqs = "/web-crawling/api/markets/cryptocurrency/majors?limit=LIMITPARAM"
+    
+    ' Encodage URL des PARAMS
+    limit = WorksheetFunction.EncodeURL(limit)
+    
+    
+    ' Etat de la connexion Rapide API
+    Call testErreur
+        
+    ' Intégration des PARAMS dans la Query String
+    epqs = Replace(epqs, "LIMITPARAM", limit)
+        
+    u = "https://" & hote & epqs
+    hApi = Array("X-Rapidapi-Key: " & apikey, "X-Rapidapi-Host: " & hote, "Content-Type: Application/json; charset=utf-8")
+    
+    s = h.getHttp(url:=u, headers:=hApi)
+ 
+    Debug.Print s
+    
+    ' Batterie de test d'erreur sur resultat de la requête
+    Call testErreur(resultat:=s)
+    If status <> "ok" Then
+        MsgBox "Erreur : " & status, vbCritical, "MBF Analytics"
+        Exit Sub
+    End If
+        
+    ' Déchiffrement expression JSON en objet VBA
+    
+    Dim o As Object
+    Set o = JsonConverter.ParseJson(s)
+
+    ' Chargement sur feuille Excel
+    ' recherche feuille Excel ou création feuille
+    Set w = getOrCreateSheet(sheetname)
+    
+    ' Purger la feuille
+    w.Cells.Clear
+    
+    ' Inscrire les paramètres de la requête API
+    w.[A1] = limit
+     
+    
+    ' Puis écire toutes les informations sur la feuille w
+     c = 1
+    For Each key In o(1).Keys
+        w.Cells(3, c).Value = key
+        If key = "PerformanceWeek" Then
+            cpercent = c
+            w.Columns(c).NumberFormat = "0.00%"
+        End If
+        w.Cells(3, c).Font.Bold = True
+        c = c + 1
+    Next key
+
+    
+    i = 4
+    For Each crypto In o
+        c = 1
+        For Each key In crypto.Keys
+            w.Cells(i, c).Value = crypto(key)
+            If c = cpercent Then w.Cells(i, c).Value = crypto(key) / 100
+            c = c + 1
+        Next key
+        i = i + 1
+    Next crypto
+
+    
+    Set plage = w.[A3].CurrentRegion
+    
+   Set lo = w.ListObjects.Add(xlSrcRange, plage, , xlYes)
+   
+    
+    
+    w.UsedRange.Columns.AutoFit
+    MsgBox "Crypto Majors importés"
+
+End Sub
+    
+    
+
+
 
 
 
