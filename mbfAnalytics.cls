@@ -1865,6 +1865,681 @@ End Sub
        
 
 
+' **************************************************
+' MBF Analytics
+' Banque de mÈthodes de DonnÈes financiËres en ligne
+' Simple utilisation
+' Robuste
+' Personnalisable API Key
+' ***************************************************
+
+
+' References :  Outils > References
+' 1- Microsoft HTML Object Library
+' 2- Microsoft WinHTTP Services, version 5.1
+
+' Classe
+' 1- Webtool
+' 2- Dictionnary
+
+
+' Constantes des la classe
+Private Const keylen As Integer = 50
+
+' PropriÈtÈs de la classe
+Private apikey As String    ' code perso pour se connecter ‡ Rapid API
+Private h As Object         ' h objet pour les requÍtes HTTP
+Public status As String     ' Ètat de la connection avec Rapid API :
+                            ' ok : tout va bien
+                            ' API Key invalide : problËme de clÈ API
+                            ' Compte ÈpuisÈ : plus de requÍtes possible
+                            ' ParamËtres de requÍte incohÈrents : Invalid request
+                            ' Endpoint Inconnue : Endpoint * does not exist
+                            ' Erreur non reconnue
+                            
+
+' ******************
+' MÈthodes Internes
+' ******************
+' Constructeur de la classe
+Private Sub Class_Initialize()
+    Set h = New WebTool
+    status = "ok"
+End Sub
+
+Public Sub initKey(key As String)
+    
+    apikey = Trim(key)
+    
+    If Len(apikey) <> keylen Then
+        status = "API Key invalide"
+        MsgBox "Erreur : " & status, vbCritical, "MBF Analytics"
+        End
+    Else
+        status = "ok"
+    End If
+        
+    Set h = New WebTool
+
+End Sub
+
+' ------------------------------------------------------------
+' Fonction de recherche ou crÈation d'une feuille Excel nommÈe
+' FigÈe
+' ParamËtre
+' - sheetname : nom de la feuille Excel recherchÈe
+' Retour : objet feuille Excel
+Private Function getOrCreateSheet(ByVal sheetname As String) As Worksheet
+    Dim w As Worksheet
+    
+    Set w = Nothing
+    
+    For Each w In Worksheets
+        If w.Name = sheetname Then Exit For
+    Next w
+    
+    If w Is Nothing Then
+        Set w = Worksheets.Add
+        w.Name = sheetname
+    End If
+
+    Set getOrCreateSheet = w
+End Function
+
+
+' ***********************************************
+' ***********************************************
+' Collection de MÈthodes financiËres de la classe
+' ***********************************************
+' ***********************************************
+
+' ****************************************************************
+' Batterie de test des erreurs possibles du rÈsultat des requÍtes
+' ****************************************************************
+' ParamËtre
+' - resultat : le rÈsultat de la requÍte RapidAPI
+' Retour : MsgBox puis End si une erreur est dÈtectÈe
+Private Sub testErreur(Optional ByVal resultat As String = "")
+    
+    If resultat Like "*" & "not subscribed * API" & "*" Then status = "Souscription ‡ l'API nÈcessaire"
+
+    If resultat Like "*" & "Endpoint * does not exist" & "*" Then status = "Endpoint inconnue"
+    
+    If resultat Like "*" & "Invalid request" & "*" Then status = "ParamËtres de requÍte incohÈrents"
+
+    If resultat Like "*" & "Wrong * parameter" & "*" Then status = "ParamËtres de requÍte incohÈrents"
+        
+    If resultat Like "*" & "data"":null" & "*" Then status = "Pas de rÈsultats. VÈrifier les paramËtres"
+    
+    If resultat Like "*" & "have exceeded * quota" & "*" Then status = "Quota de requÍtes dÈpassÈ."
+    
+    If resultat Like "*" & "have exceeded * quota" & "*" Then status = "Quota de requÍtes dÈpassÈ."
+    
+    If resultat Like "*" & "not valid value from parameter" & "*" Then status = "ParamËtres de requÍte incohÈrents"
+    
+    
+    ' Erreur ajoutÈe
+        
+    If resultat Like "*" & "code: 500" & "*" Then status = "Serveur indisponible"
+    
+    ' Erreurs liÈes ‡ líauthentification
+If resultat Like "*" & "401 Unauthorized*" & "*" Then status = "API Key non valide ou expirÈe"
+If resultat Like "*" & "403 Forbidden*" & "*" Then status = "AccËs refusÈ : permissions insuffisantes"
+
+' Erreurs de format ou de syntaxe
+If resultat Like "*" & "400 Bad Request*" & "*" Then status = "RequÍte mal formÈe ou paramËtre invalide"
+If resultat Like "*" & "invalid date*" & "*" Then status = "ParamËtre date invalide"
+
+' Erreurs liÈes ‡ la limite de requÍtes
+If resultat Like "*" & "rate limit exceeded*" & "*" Then status = "Limite de requÍtes atteinte. Attendez avant de relancer"
+If resultat Like "*" & "429 Too Many Requests*" & "*" Then status = "Trop de requÍtes envoyÈes en peu de temps"
+
+' Erreurs liÈes aux donnÈes manquantes
+If resultat Like "*" & "No data found*" & "*" Then status = "Aucune donnÈe disponible pour ces paramËtres"
+If resultat Like "*" & "data not available*" & "*" Then status = "DonnÈes non disponibles pour ce pays ou cette pÈriode"
+
+' Erreurs serveur
+If resultat Like "*" & "502 Bad Gateway*" & "*" Then status = "Erreur serveur temporaire (502)"
+If resultat Like "*" & "503 Service Unavailable*" & "*" Then status = "Service temporairement indisponible (503)"
+If resultat Like "*" & "504 Gateway Timeout*" & "*" Then status = "DÈlai d'attente dÈpassÈ, serveur lent (504)"
+
+' Cas spÈcifiques RapidAPI
+If resultat Like "*" & "You have reached your subscription limit*" & "*" Then status = "Limite de souscription RapidAPI atteinte"
+If resultat Like "*" & "API key missing*" & "*" Then status = "ClÈ API manquante ou non transmise"
+
+    
+    If status <> "ok" Then
+        MsgBox "Erreur : " & status & vbCrLf & vbCrLf & resultat, vbCritical, "MBF Analytics"
+        End
+    End If
+
+End Sub
+
+
+' *************************************
+' MÈthode gÈnÈrique ‡ personnaliser -> Calendrier Èconomique via API
+' *************************************
+' Auteur : Valentin Grange & Marion Neveu-Perret
+' Lien vers la page API : https://rapidapi.com/yasimpratama88/api/economic-calendar-api
+
+' Params avec valeur d'exemple :
+'  sheetname = "Calendrier" nom de la feuille crÈe
+'  endDate = "2025-07-30" date de fin doit Ítre spÈcifiÈe en format ISO : YYYY-MM-DD et doit se situer dans la plage de dates correspondant ‡ la semaine en cours
+'  countryCode = "US" Permet de filtrer les donnÈes par code de pays (voir annexe en fin de page pour la liste exhaustive). Il est possible de spÈcifier un code unique de pays pour obtenir les donnÈes d'un pays spÈcique ou de ne rien renseigner pour obtenir les donnÈes de tous les pays disponibles. Impossible de rentrer une liste de pays.
+'  limit  = "500" Permet de dÈfinir le nombre maximum de lignes renvoyÈes par le tableau.
+'  startDate =  "2025-07-30" date de dÈbut doit Ítre spÈcifiÈe en format ISO : YYYY-MM-DD et doit se situer dans la plage de dates correspondant ‡ la semaine en cours
+' timezone = "GMT+1"  paramËtre permet de spÈcifier le fuseau horaire pour les heures des ÈvÈnements du calendrier (voir annexe de fin de page pour la liste exhaustive). Par exemple, "GMT+1" correspond ‡ l'heure de l'Europe centrale. Si un autre fuseau horaire est nÈcessaire, vous pouvez le spÈcifier sous la forme "GMT+X" ou "GMT-X", o˘ X reprÈsente l'offset horaire et X doit Ítre un nombre entier.
+' volatility = "MEDIUM" permet de spÈcifier le niveau de volatilitÈ attendu pour les ÈvÈnements, avec les options "LOW" pour faible, "MEDIUM" pour modÈrÈ, "HIGH" pour ÈlevÈ, ou "NONE" pour inclure toutes les donnÈes, indÈpendamment de la volatilitÈ.
+' Retour :
+'  rÈsultats formatÈs sur feuille excel sheetname
+
+'
+Public Sub MacroCalendar(Optional ByVal sheetname As String = "Calendrier_1", Optional ByVal startDate As String = "2025-07-29", Optional ByVal endDate As String = "2025-07-30", Optional ByVal countryCode As String = "US,UK,DE", Optional ByVal timezone As String = "GMT+1", Optional ByVal volatility As String = "NONE", Optional ByVal limit As String = "500")
+    
+    ' Parties de la RequÍte ‡ l'API
+    ' Hote
+    hote = "economic-calendar-api.p.rapidapi.com"
+    ' Endpoint?Query String avec ParamËtres gÈnÈriques en majuscule
+    epqs = "/calendar?endDate=ENDDATE&countryCode=COUNTRYCODE&limit=LIMIT&startDate=STARTDATE&timezone=TIMEZONE"
+    
+     'Ajout pour gÈrer le paramËtre volatility avec un if
+    If UCase(volatility) <> "NONE" Then
+        ' Si LOW / MEDIUM / HIGH ? on l'ajoute
+        epqs = "/calendar?endDate=ENDDATE&countryCode=COUNTRYCODE&limit=LIMIT&startDate=STARTDATE&timezone=TIMEZONE&volatility=VOLATILITY"
+    Else
+        ' Si NONE ? on ne touche pas ‡ epqs (donc pas de volatilitÈ dans líURL)
+    End If
+    
+    'RÈcupÈration de la valeur non encodÈe de TIMEZONE pour l'inclure dans le tableau rÈsumer sous le bon format
+    timezone_raw = timezone
+    
+    ' Encodage URL des PARAMS
+    endDate = WorksheetFunction.EncodeURL(endDate)
+    countryCode = WorksheetFunction.EncodeURL(countryCode)
+    limit = WorksheetFunction.EncodeURL(limit)
+    startDate = WorksheetFunction.EncodeURL(startDate)
+    timezone = WorksheetFunction.EncodeURL(timezone)
+    volatility = WorksheetFunction.EncodeURL(volatility)
+    
+    
+    ' Etat de la connexion Rapide API
+    Call testErreur
+        
+    ' IntÈgration des PARAMS dans la Query String
+    epqs = Replace(epqs, "ENDDATE", endDate)
+    epqs = Replace(epqs, "COUNTRYCODE", countryCode)
+    epqs = Replace(epqs, "LIMIT", limit)
+    epqs = Replace(epqs, "STARTDATE", startDate)
+    epqs = Replace(epqs, "TIMEZONE", timezone)
+    epqs = Replace(epqs, "VOLATILITY", volatility)
+        
+    u = "https://" & hote & epqs
+    hAPI = Array("X-Rapidapi-Key: " & apikey, "X-Rapidapi-Host: " & hote, "Content-Type: Application/json; charset=utf-8")
+    
+    s = h.getHttp(url:=u, headers:=hAPI)
+ 
+    Debug.Print s
+    
+    ' Batterie de test d'erreur sur resultat de la requÍte
+    Call testErreur(resultat:=s)
+    
+    If status <> "ok" Then
+        MsgBox "Erreur : " & status, vbCritical, "MBF Analytics"
+        Exit Sub
+    End If
+        
+    ' DÈchiffrement expression JSON en objet VBA
+    
+    Dim JsonC As Object
+    Set JsonC = JsonConverter.ParseJson(s)
+
+    ' Chargement sur feuille Excel
+    
+    ' recherche feuille Excel ou crÈation feuille
+    Set w = getOrCreateSheet(sheetname)
+    
+    ' Purger la feuille
+    w.Cells.Clear
+    
+    ' Inscription des intitulÈs et valeurs du tableau rÈsumÈ
+    w.[J1] = "Date de dÈbut"
+    w.[J2] = "Date de fin"
+    w.[J3] = "Code de pays"
+    w.[J4] = "Fuseau horaire"
+    w.[J5] = "VolatilitÈ attendue"
+    w.[J6] = "Limite de ligne"
+    
+    w.[K1] = startDate
+    w.[K2] = endDate
+    w.[K3] = countryCode
+    w.[K4] = timezone_raw
+    w.[K5] = volatility
+    w.[K6] = limit
+    
+    ' Inscription des intitulÈs du tableau Èconomique
+    w.Range("A1").Value = "Date"
+    w.Range("B1").Value = "Time"
+    w.Range("C1").Value = "Pays"
+    w.Range("D1").Value = "Event"
+    w.Range("E1").Value = "Volatility"
+    w.Range("F1").Value = "Actual"
+    w.Range("G1").Value = "Consensus"
+    w.Range("H1").Value = "Previous"
+
+    ' Puis Ècire toutes les informations sur la feuille w
+
+' --- DÈbut : Ècrire les events JSON sous les en-tÍtes A8:G8 ---
+Dim dataArr As Object
+Dim itm As Object
+Dim writeRow As Long
+
+Dim dateStr As String
+Dim yearN As Long, monthN As Long, dayN As Long
+Dim hourN As Long, minN As Long, secN As Long
+Dim dt As Date
+Dim tzOffset As Long
+Dim signPos As Long
+
+' VÈrifier que JsonC contient "data"
+If JsonC Is Nothing Then
+    MsgBox "JSON non parsÈ (JsonC = Nothing).", vbCritical
+    Exit Sub
+End If
+
+If Not JsonC.Exists("data") Then
+    MsgBox "Le JSON ne contient pas la clÈ 'data'.", vbExclamation
+    Exit Sub
+End If
+
+Set dataArr = JsonC("data")
+
+' DÈterminer l'offset du fuseau timezone (ex: "GMT+1" -> 1, "GMT-2" -> -2)
+tzOffset = 0
+If Len(timezone) > 0 Then
+    ' On suppose timezone comme "GMT+1" ou "GMT-2" ou "GMT+0"
+    signPos = InStr(1, timezone, "GMT", vbTextCompare)
+    If signPos > 0 Then
+        On Error Resume Next
+        Dim rawOffset As String
+        rawOffset = Replace(timezone, "GMT", "", 1, -1, vbTextCompare)
+        rawOffset = Trim(rawOffset)
+        If rawOffset <> "" Then
+            tzOffset = CLng(rawOffset) ' convertit "+1" ou "-2" en nombre
+        Else
+            tzOffset = 0
+        End If
+        On Error GoTo 0
+    End If
+End If
+
+' Ligne de dÈpart : la premiËre ligne de donnÈes est la ligne 9 (tes en-tÍtes sur la ligne 8)
+writeRow = 2
+
+' Boucle sur les ÈlÈments
+If Not dataArr Is Nothing Then
+    For Each itm In dataArr
+        ' 1) Date & Time : partir de dateUtc si prÈsent
+        dateStr = ""
+        dt = 0
+        If itm.Exists("dateUtc") Then
+            dateStr = itm("dateUtc") ' ex: "2025-11-17T17:30:00.000Z"
+            If Len(dateStr) >= 19 Then
+                ' extraire composants (on ignore millisecondes et Z)
+                On Error Resume Next
+                yearN = CLng(Mid$(dateStr, 1, 4))
+                monthN = CLng(Mid$(dateStr, 6, 2))
+                dayN = CLng(Mid$(dateStr, 9, 2))
+                hourN = CLng(Mid$(dateStr, 12, 2))
+                minN = CLng(Mid$(dateStr, 15, 2))
+                secN = CLng(Mid$(dateStr, 18, 2))
+                On Error GoTo 0
+                If yearN > 1900 Then
+                    dt = DateSerial(yearN, monthN, dayN) + TimeSerial(hourN, minN, secN)
+                    ' Appliquer l'offset du fuseau (dateUtc -> timezone local)
+                    If tzOffset <> 0 Then
+                        dt = DateAdd("h", tzOffset, dt)
+                    End If
+                End If
+            End If
+        End If
+
+        ' Ecrire colonne Date (A) et Date(B) :
+        If dt <> 0 Then
+            w.Cells(writeRow, "A").Value = Format(dt, "yyyy-mm-dd")
+            w.Cells(writeRow, "B").Value = Format(dt, "HH:nn")
+        Else
+            w.Cells(writeRow, "A").Value = ""
+            w.Cells(writeRow, "B").Value = ""
+        End If
+
+
+        ' Colonne Event (C) -> CountryCode
+        If itm.Exists("countryCode") Then
+            If IsNull(itm("countryCode")) Then
+                w.Cells(writeRow, "C").Value = ""
+            Else
+                w.Cells(writeRow, "C").Value = itm("countryCode")
+            End If
+        Else
+            w.Cells(writeRow, "C").Value = ""
+        End If
+
+
+        ' Colonne Event (D) -> name
+        If itm.Exists("name") Then
+            If IsNull(itm("name")) Then
+                w.Cells(writeRow, "D").Value = ""
+            Else
+                w.Cells(writeRow, "D").Value = itm("name")
+            End If
+        Else
+            w.Cells(writeRow, "D").Value = ""
+        End If
+
+        ' Colonne Volatility (E) -> volatility (ex: "LOW")
+        If itm.Exists("volatility") Then
+            If IsNull(itm("volatility")) Then
+                w.Cells(writeRow, "E").Value = ""
+            Else
+                w.Cells(writeRow, "E").Value = itm("volatility")
+            End If
+        Else
+            w.Cells(writeRow, "E").Value = ""
+        End If
+
+        ' Colonne Actual (F) -> actual
+        If itm.Exists("actual") Then
+            If IsNull(itm("actual")) Then
+                w.Cells(writeRow, "F").Value = ""
+            Else
+                w.Cells(writeRow, "F").Value = itm("actual")
+            End If
+        Else
+            w.Cells(writeRow, "F").Value = ""
+        End If
+
+        ' Colonne Consensus (G) -> consensus
+        If itm.Exists("consensus") Then
+            If IsNull(itm("consensus")) Then
+                w.Cells(writeRow, "G").Value = ""
+            Else
+                w.Cells(writeRow, "G").Value = itm("consensus")
+            End If
+        Else
+            w.Cells(writeRow, "G").Value = ""
+        End If
+
+        ' Colonne Previous (H) -> previous
+        If itm.Exists("previous") Then
+            If IsNull(itm("previous")) Then
+                w.Cells(writeRow, "H").Value = ""
+            Else
+                w.Cells(writeRow, "H").Value = itm("previous")
+            End If
+        Else
+            w.Cells(writeRow, "H").Value = ""
+        End If
+
+        writeRow = writeRow + 1
+    Next itm
+Else
+    MsgBox "La liste data est vide.", vbInformation
+End If
+
+' --- Fin : Ècriture des events ---
+
+
+' Comptabilisation du nombre de lignes renvoyÈes par l'API
+
+w.[J7] = "Nombre de ligne"
+If Not dataArr Is Nothing Then
+    w.Range("K7").Value = dataArr.Count
+Else
+    w.Range("K7").Value = 0
+End If
+
+
+'***** MISE EN FORME****
+
+
+' === Transforme A:G en Table Excel ===
+Dim lastRow As Long
+Dim lo As ListObject
+
+' Trouver la derniËre ligne remplie dans la colonne A
+lastRow = w.Cells(w.Rows.Count, "A").End(xlUp).Row
+
+' Supprimer líancienne table si elle existe dÈj‡
+On Error Resume Next
+w.ListObjects("TableCalendar").Delete
+On Error GoTo 0
+
+' CrÈer la table
+Set lo = w.ListObjects.Add( _
+            SourceType:=xlSrcRange, _
+            Source:=w.Range("A1:H" & lastRow), _
+            XlListObjectHasHeaders:=xlYes)
+
+' Nom de la table
+lo.Name = "TableCalendar"
+
+' Style de tableau (moderne et clair)
+lo.TableStyle = "TableStyleMedium9"
+
+
+
+' === Mise en couleur simple de la colonne Volatility (colonne D) ===
+Dim rngVol As Range
+Dim cell As Range
+
+Set lo = w.ListObjects("TableCalendar")
+Set rngVol = lo.ListColumns("Volatility").DataBodyRange  ' Utiliser lo et non var
+
+' Parcours des cellules
+For Each cell In rngVol
+    Select Case UCase(cell.Value)
+        Case "LOW"
+            cell.Interior.Color = RGB(255, 255, 153) ' jaune clair
+        Case "MEDIUM"
+            cell.Interior.Color = RGB(255, 204, 102) ' orange clair
+        Case "HIGH"
+            cell.Interior.Color = RGB(255, 102, 102) ' rouge clair
+        Case Else
+            cell.Interior.ColorIndex = xlNone ' pas de couleur
+    End Select
+Next cell
+
+
+
+' === Fin de líÈcriture des donnÈes JSON : ajout des informations du tableau rÈsumÈ ===
+
+' Nombre de lignes rÈellement retournÈes
+w.[J7] = "Nombre de lignes"
+w.[K7] = writeRow - 1
+
+' Statut API
+w.[J8] = "Statut API"
+w.[K8] = status
+
+
+' Heure de la requÍte
+w.[J9] = "RequÍte effectuÈe le"
+w.[K9] = Now
+
+
+w.Columns("K").HorizontalAlignment = xlLeft
+
+
+' === Coloration des cellules Actual (E) selon comparaison avec Consensus (F) ===
+Dim iconRange As Range
+Dim cell2 As Range
+
+' DÈfinir la plage de la colonne Actual (E)
+Set iconRange = w.Range("F2:F" & writeRow - 1) ' writeRow pointe sur la ligne suivante aprËs la derniËre
+
+' Parcours des cellules
+For Each cell2 In iconRange
+    ' VÈrifier si Actual et Consensus ne sont pas vides et sont numÈriques
+    If Len(cell2.Value) > 0 And Len(cell2.Offset(0, 1).Value) > 0 Then
+        If IsNumeric(cell2.Value) And IsNumeric(cell2.Offset(0, 1).Value) Then
+            If cell2.Value > cell2.Offset(0, 1).Value Then
+                ' Actual > Consensus : vert
+                cell2.Interior.Color = RGB(0, 176, 80)
+            ElseIf cell2.Value < cell2.Offset(0, 1).Value Then
+                ' Actual < Consensus : rouge
+                cell2.Interior.Color = RGB(192, 0, 0)
+            Else
+                ' Actual = Consensus : pas de couleur
+                cell2.Interior.ColorIndex = xlNone
+            End If
+        Else
+            ' Si pas numÈrique : pas de couleur
+            cell2.Interior.ColorIndex = xlNone
+        End If
+    Else
+        ' Si une des deux cellules est vide : pas de couleur
+        cell2.Interior.ColorIndex = xlNone
+    End If
+Next cell2
+
+
+
+' Ajustement automatique de la largeur des colonnes
+On Error Resume Next    ' …vite les erreurs si une colonne est vide
+w.Cells.EntireColumn.AutoFit
+On Error GoTo 0
+
+End Sub
+
+
+
+ '*************************************
+' *************************************
+'ANNEXE
+' *************************************
+' *************************************
+
+
+' *************************************
+' Liste exhaustive des codes de pays
+' *************************************
+
+'GB' 'United Kingdom'
+'EU' 'European Union'
+'JP' 'Japan'
+'DE' 'Germany'
+'FR' 'France'
+'CA' 'Canada'
+'AU' 'Australia'
+'CH' 'Switzerland'
+'CN' 'China'
+'NZ' 'New Zealand'
+'IT' 'Italy'
+'ES' 'Spain'
+'SE' 'Sweden'
+'NO' 'Norway'
+'DK' 'Denmark'
+'FI' 'Finland'
+'NL' 'Netherlands'
+'BE' 'Belgium'
+'AT' 'Austria'
+'IE' 'Ireland'
+'PT' 'Portugal'
+'GR' 'Greece'
+'PL' 'Poland'
+'CZ' 'Czech Republic'
+'HU' 'Hungary'
+'SK' 'Slovakia'
+'SI' 'Slovenia'
+'EE' 'Estonia'
+'LV' 'Latvia'
+'LT' 'Lithuania'
+'LU' 'Luxembourg'
+'MT' 'Malta'
+'CY' 'Cyprus'
+'BG' 'Bulgaria'
+'RO' 'Romania'
+'HR' 'Croatia'
+'RS' 'Serbia'
+'BA' 'Bosnia and Herzegovina'
+'ME' 'Montenegro'
+'MK' 'North Macedonia'
+'AL' 'Albania'
+'XK' 'Kosovo'
+'MD' 'Moldova'
+'UA' 'Ukraine'
+'BY' 'Belarus'
+'RU' 'Russia'
+'TR' 'Turkey'
+'IL' 'Israel'
+'SA' 'Saudi Arabia'
+'AE' 'United Arab Emirates'
+'KW' 'Kuwait'
+'QA' 'Qatar'
+'BH' 'Bahrain'
+'OM' 'Oman'
+'JO' 'Jordan'
+'LB' 'Lebanon'
+'EG' 'Egypt'
+'ZA' 'South Africa'
+'NG' 'Nigeria'
+'KE' 'Kenya'
+'GH' 'Ghana'
+'MA' 'Morocco'
+'TN' 'Tunisia'
+'DZ' 'Algeria'
+'LY' 'Libya'
+'SD' 'Sudan'
+'ET' 'Ethiopia'
+'UG' 'Uganda'
+'TZ' 'Tanzania'
+'RW' 'Rwanda'
+'BI' 'Burundi'
+'DJ' 'Djibouti'
+'SO' 'Somalia'
+'ER' 'Eritrea'
+'SS' 'South Sudan'
+'CF' 'Central African Republic'
+'TD' 'Chad'
+'CM' 'Cameroon'
+'GA' 'Gabon'
+'GQ' 'Equatorial Guinea'
+'ST' 'Sao Tome and Principe'"
+
+
+' *************************************
+' Liste des fuseaux horaires
+' *************************************
+
+'GMT+1' 'Paris'
+'GMT+2' 'AthËnes'
+'GMT+3' 'Moscou'
+'GMT+4' 'DubaÔ'
+'GMT+5' 'Islamabad'
+'GMT+6' 'Dhaka'
+'GMT+7' 'Bangkok'
+'GMT+8' 'PÈkin'
+'GMT+9' 'Tokyo'
+'GMT+10' 'Sydney'
+'GMT+11' 'NoumÈa'
+'GMT+12' 'Auckland'
+'GMT-1' 'AÁores'
+'GMT-2' 'Grenade'
+'GMT-3' 'Buenos Aires'
+'GMT-4' 'Santiago'
+'GMT-5' 'New York'
+'GMT-6' 'Mexico City'
+'GMT-7' 'Denver'
+'GMT-8' 'Los Angeles'
+'GMT-9' 'Anchorage'
+'GMT-10' 'Honolulu'
+'GMT-11' 'NiuÈ'
+'GMT-12' 'Baker Island'"
+
+
+
+
+
 
 
 
