@@ -66,7 +66,6 @@ Sub test_MBFanalytics()
 
     ' Test invocation Financial Modeling
     Call m.financial_modeling_prep(sheetname:="Cashflow statement", period:="FY", limit:="50", symbol:="AAPL")
-    
 
     'Test BabounSkoff Sentiment stock api (Yanis, Pierre-Alexandre, Nicolas)
     Call m.Sentiment_Stock(sheetname:="Tesla", ticker:="TSLA")
