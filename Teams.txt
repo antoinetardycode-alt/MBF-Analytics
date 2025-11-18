@@ -87,7 +87,6 @@ Description : Recupérer une liste d'options (calls, puts, dates d'expiration, p
 L&J
 - Lilou Droulers
 - Juliette Soucaasse
-Lien API : https://financial-modeling-prep.p.rapidapi.com/v3/cash-flow-statement-as-reported/AAPL?period=annual&limit=50
-Yves Lien PlayGround : https://rapidapi.com/contact-8Fn44oGJQx/api/financial-modeling-prep/playground/apiendpoint_29b54ea8-a339-4f64-a8e3-e9d4cda91564
+Lien API : https://rapidapi.com/contact-8Fn44oGJQx/api/financial-modeling-prep/playground/apiendpoint_29b54ea8-a339-4f64-a8e3-e9d4cda91564
 Description : obtenir le tableau des flux de trésorerie d'une entreprise tel que déclaré par celle-ci, sans ajustement
 
