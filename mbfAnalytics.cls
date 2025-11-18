@@ -307,15 +307,15 @@ End Sub
 
 
 ' *************************************
-' Historique Yahoo Finance
+' Cotation journalière historique d'une période donnée Yahoo Finance
 ' *************************************
 ' Auteur : Théo, Mathieu, Noé
 ' Lien vers la page API : https://rapidapi.com/calvinlo/api/yh-finance-complete
 ' Params avec valeur d'exemple :
 '   sheetname = "yhf_historical" nom de la feuille crée
 '   ticker    = "AAPL"           Ticker boursier (ex: AAPL, TSLA, ORA.PA)
-'   sdate     = "2024-01-10"     Date de début (format YYYY-MM-DD)
-'   edate     = "2024-02-16"     Date de fin (format YYYY-MM-DD)
+'   sdate     = "2024-01-10"     Date de début (format YYYY-MM-DD) à partir du 1 janvier 1970
+'   edate     = "2024-02-16"     Date de fin (format YYYY-MM-DD) jusqu'à j-7
 ' Retour
 '   Feuille Excel avec historique de cotation nettoyé et formaté
 Public Sub yhf_historical(Optional ByVal sheetname = "yhf_historical", Optional ByVal ticker = "AAPL", Optional ByVal sdate = "2024-01-10", Optional ByVal edate = "2024-02-16")
@@ -552,5 +552,6 @@ Public Sub maMethode(Optional ByVal sheetname = " ** maMethode ** ", Optional By
     ' ...
     
 End Sub
+
 
 
