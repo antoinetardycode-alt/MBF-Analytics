@@ -57,7 +57,9 @@ Sub test_MBFanalytics()
         
     ' Test Real Time Quotes1
     Call m.real_time_quotes1(sheetname:="Orange Sto", interval:="4hour", symbol:="ORA.PA", fromdt:="2025-06-01", untildt:="2025-11-01")
-    
+
+    'Test Yahou finance historical (Théo, Mathieu, Noé)
+    Call m.yhf_historical(sheetname:="TSLA Hist", ticker:="TSLA", sdate:="2024-01-01", edate:="2024-12-31")
 End Sub
 ```
 
