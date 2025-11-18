@@ -895,6 +895,162 @@ End Sub
 
 
 
+' *************************************
+' Yahoo Historical
+' *************************************
+' Auteur : Ornella Creignou & Anouck Nabec
+' Description : This endpoint returns the history of a public stock.
+' Lien vers la page API : https://rapidapi.com/belchiorarkad-FqvHs2EDOtP/api/yh-finance-complete/playground/apiendpoint_a03eb200-d01b-4980-b7ca-a3187ef5b0e3?env=undefined
+' Params avec valeur d'exemple :
+'  sheetname = " TSLA_HIST_TEST" nom de la feuille créée
+'  ticker = "TSLA"
+'  sdate = "2024-01-10" date de depart de l'historique
+'  sdate = "2024-02-16" date de fin de l'historique
+' Retour :
+'  résultats formatés sur feuille excel sheetname
+
+Public Sub YH_Historical(Optional ByVal sheetname = "TSLA_HIST_TEST", Optional ByVal ticker = "TSLA", Optional ByVal sdate = "2023-01-10", Optional ByVal edate = "2024-02-16")
+
+    'déclarations
+    Dim hote As String, epqs As String, u As String, s As String
+    Dim hAPI As Variant
+    Dim w As Worksheet
+    Dim k As Long
+    Dim i As Long
+    
+    
+    ' Etat de la connexion Rapide API
+    Call testErreur
+     
+
+    ' Vérifie la clé API
+    Call testErreur
+
+    ' H™te et endpoint
+    hote = "yh-finance-complete.p.rapidapi.com"
+    epqs = "/yhfhistorical?ticker=TSLA&sdate=2023-01-10&edate=2024-02-16"
+    
+    ' Encodage URL des PARAMS
+    ticker = WorksheetFunction.EncodeURL(ticker)
+    sdate = WorksheetFunction.EncodeURL(sdate)
+    edate = WorksheetFunction.EncodeURL(edate)
+
+    
+    ' Remplacement des paramtres
+    epqs = Replace(epqs, "TICKER", ticker)
+    epqs = Replace(epqs, "SDATE", sdate)
+    epqs = Replace(epqs, "EDATE", edate)
+
+    ' URL finale
+    u = "https://" & hote & epqs
+
+    ' Headers API
+    hAPI = Array("X-Rapidapi-Key: " & apikey, "X-Rapidapi-Host: " & hote, "Content-Type: Application/json; charset=utf-8")
+    s = h.getHttp(url:=u, headers:=hAPI)
+ 
+    Debug.Print s
+    
+    ' Batterie de test d'erreur sur resultat de la requte
+    Call testErreur(resultat:=s)
+    
+    If status <> "ok" Then
+        MsgBox "Erreur : " & status, vbCritical, "MBF Analytics"
+        Exit Sub
+    End If
+        
+    ' DŽchiffrement expression JSON en objet VBA
+    
+    Dim o As Object
+    Set o = JsonConverter.ParseJson(s)
+
+    ' Chargement sur feuille Excel
+    
+    ' recherche feuille Excel ou crŽation feuille
+    Set w = getOrCreateSheet(sheetname)
+    
+    ' Purger la feuille
+    w.Cells.Clear
+    
+ 
+    ' Inscrire les paramtres de la requte API et leur valeur respectives
+    w.[A1] = "ticker"
+    w.[A2] = ticker
+
+    w.[B1] = "sdate"
+    w.[B2] = sdate
+
+    w.[C1] = "edate"
+    w.[C2] = edate
+
+    If o.Count > 0 Then
+        n = o.Count
+        p = o(1).Count
+    
+    ' ƒcrire les enttes (noms des champs JSON) ˆ partir de la ligne 4
+    w.[A4].Resize(1, p) = o(1).Keys()
+    
+    ' ƒcrire les valeurs ˆ partir de la ligne 5
+    For k = 1 To n ' Boucle principale pour chaque jour de cotation.
+    
+    ' ƒcrire toutes les valeurs de l'enregistrement du jour
+    w.[A5].Rows(k).Resize(1, p) = o(k).Items()
+        
+    ' Formatage des donnŽes
+        ' Colonne 1 : Date/Heure (clŽ "date")
+        d = w.[A5].Rows(k).Columns(1)
+        
+    
+    ' --- Ajout des fonctions Replace ---
+    
+    ' 1. Remplacer "T" par un espace
+    d = Replace(d, "T", " ")
+    
+    ' 2. Supprimer ".000Z"
+    d = Replace(d, ".000Z", "")
+    
+    ' La variable 'd' contient maintenant la chaîne de date nettoyée
+    ' Il faut la réaffecter à la cellule avant le formatage si elle a été modifiée,
+    ' mais souvent on utilise la ligne suivante pour la conversion et le formatage :
+    
+    ' Reconversion et Formatage (si 'd' est une variable String)
+    w.[A5].Rows(k).Columns(1).Value = Format(CDate(d), "dd-mm-yyyy")
+    
+
+        
+        ' Colonnes 2 ˆ p : Prix et Volume
+        For i = 2 To p
+            ' Le volume est la 3me colonne ('volume') dans votre rŽponse JSON
+            If i = 3 Then
+                w.[A5].Rows(k).Columns(i).NumberFormat = "#,##0"
+            Else
+                w.[A5].Rows(k).Columns(i).NumberFormat = "#,##0.00"
+            End If
+            
+        Next i
+    Next k
+    
+    ' Mise en gras des titres et en-tte
+        'Lignes 1 (A1:C1) pour les titres des paramtres
+        ' Ligne 4 (A4 jusqu'ˆ la colonne p) pour les en-ttes du tableau
+            w.Range("A1:C1").Font.Bold = True
+            w.Range(w.Cells(4, 1), w.Cells(4, p)).Font.Bold = True
+        
+Dim t As ListObject
+
+' Détermine la dernière ligne de données (Ligne 4 pour l'en-tête + n lignes de données)
+Dim LastRow As Long
+LastRow = 4 + n
+
+' Création du tableau structuré (ListObject)
+' Plage: de la cellule A4 (en-tête) à la cellule de la dernière colonne (p) sur la LastRow.
+Set t = w.ListObjects.Add(SourceType:=xlSrcRange, Source:=w.Range(w.Cells(4, 1), w.Cells(LastRow, p)), XlListObjectHasHeaders:=xlYes)
+            
+Set t = w.ListObjects.Add(SourceType:=xlSrcRange, Source:=w.Range(w.Cells(1, 1), w.Cells(2, 3)), XlListObjectHasHeaders:=xlYes)
+    ' Ajustement des colonnes automatique
+    w.UsedRange.Columns.AutoFit
+    End If
+End Sub
+
 
 
 
