@@ -24,6 +24,9 @@ PNL maker
 Crabby
 - Elio Arico
 - Armand Geoffroy
+- Lien API : https://rapidapi.com/letscrape-6bRBa3QguO5/api/real-time-finance-data/playground/endpoint_0ad54c53-f027-44ec-addd-5908aa6ea55c
+- Description = Obtenir les principaux financiers d'une entreprise en fonction des pèriodes
+
 
 TUG
 -Tugdual Pothier
