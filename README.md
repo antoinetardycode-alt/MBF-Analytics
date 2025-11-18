@@ -83,7 +83,7 @@ Sub test_MBFanalytics()
 
     m.initKey "1456eb71e7mshe238a98cab7fd2dp17a004jsn39f15b02097a"
     
-   Call m.Options("Options", "NVDA", "en-US", "US")
+    Call m.Options("Options", "NVDA", "en-US", "US")
 
 End Sub
 
