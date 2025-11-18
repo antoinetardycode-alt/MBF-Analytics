@@ -72,8 +72,10 @@ Sub test_MBFanalytics()
 
   ' Exemple invocation Bloomberg Financial ( quentin, baptiste, kyan, tugdual)
     Call m.CryptoMajors(sheetname:="Vide", limit:=10)
-    
 
+ ' Exemple currency extracter (Selyana, Alissia)
+   Call m.currency_extractor(sheetname:="currency_extractor", start_date:="2019-01-01", end_date:="2019-06-01", base:="USD", symbols:="EUR, AFN")
+     
 
 
 End Sub
