@@ -556,6 +556,7 @@ End Sub
 
 
 
+
 ' *************************************
 ' Méthode générique à personnaliser
 ' *************************************
@@ -595,6 +596,8 @@ Public Sub financial_modeling_prep(Optional ByVal sheetname = "financial_modelin
     Dim n As Long
     Dim p As Long
     Dim cleOriginale As String
+    Dim tableauMots() As String
+    Dim x As Long
     
     
     ' Parties de la Requête à l'API
@@ -646,10 +649,7 @@ Public Sub financial_modeling_prep(Optional ByVal sheetname = "financial_modelin
     w.[B1] = limit
     w.[C1] = symbol
     
-    
-    
-    
-    ' --- VOTRE ALGORITHME D'AFFICHAGE ---
+  
     p = o.Count
     
     j = 1
@@ -693,13 +693,24 @@ Public Sub financial_modeling_prep(Optional ByVal sheetname = "financial_modelin
                 End If
             Next mot
             
-            ' Nettoyage final (supprimer les doubles espaces et espaces aux extrémités)
+            ' Supprimer les doubles espaces et espaces aux extrémités
             k = Trim(k)
             Do While InStr(k, "  ") > 0
                 k = Replace(k, "  ", " ")
             Loop
-            
+            k = WorksheetFunction.Proper(k)
 
+
+            tableauMots = Split(k, " ")
+            k = tableauMots(0)
+            
+            ' On compare chaque mot avec le précédent
+            For x = 1 To UBound(tableauMots)
+                If LCase(tableauMots(x)) <> LCase(tableauMots(x - 1)) Then
+                    k = k & " " & tableauMots(x)
+                End If
+            Next x
+            
 
             c.Offset(0, j - 1) = k
             
@@ -1303,6 +1314,7 @@ Private Sub testErreur(Optional ByVal resultat As String = "")
     End If
 
 End Sub
+
 
 
 
