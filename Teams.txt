@@ -58,7 +58,8 @@ Madoff
 Team SA
 - Alissia
 - Selyana
-currency conversion and 	
+- currency conversion and exchange rates	
+- Description : obtenir des taux de change à jour et historiques, et effectuer des conversions de devises de façon fiable et automatisée
 https://rapidapi.com/principalapis/api/currency-conversion-and-exchange-rates/playground/endpoint_01c2f371-2ab0-4e56-98f4-e4f4149e9cfc
 
 Team SantaCruz
