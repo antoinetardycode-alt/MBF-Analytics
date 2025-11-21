@@ -2412,6 +2412,126 @@ On Error GoTo 0
 End Sub
 
 
+' *************************************
+' Méthode générique à personnaliser
+' *************************************
+' Auteur : Juliette Morignot,  Alya Bennys
+' Lien vers la page API : https://rapidapi.com/alphawave/api/financial-statements/playground/apiendpoint_b4be9cff-500e-4f64-a5a9-a8d73f9cde7a
+' Params avec valeur d'exemple :
+'  sheetname = "Income_statement" nom de la feuille créée
+'  ticker = "AAPL"
+' Retour :
+'  résultats formatés sur feuille excel sheetname
+'
+Public Sub Income_statement( _
+    Optional ByVal sheetname As String = "Income_statement", _
+    Optional ByVal ticker As String = "AAPL")
+
+    ' === Déclaration des variables ===
+    Dim w As Worksheet
+    Dim o As Object
+    Dim r As Long
+    Dim c As Long
+    Dim i As Long
+    Dim key As Variant
+
+    ' Parties de la Requête à l'API
+    ' Hôte
+    hote = "financial-statements.p.rapidapi.com"
+    
+    ' Endpoint?Query String avec Paramètres génériques en majuscule
+    epqs = "/api/v1/resources/income-statement?ticker=TICKER" ' avec mot générique pour les paramètres
+    
+    ' Encodage URL des PARAMS
+    ticker = WorksheetFunction.EncodeURL(ticker)
+    
+    ' Etat de la connexion Rapide API
+    Call testErreur
+    
+    ' Intégration des PARAMS dans la Query String
+    epqs = Replace(epqs, "TICKER", ticker)
+       
+    u = "https://" & hote & epqs
+    
+    hAPI = Array( _
+        "X-Rapidapi-Key: " & apikey, _
+        "X-Rapidapi-Host: " & hote, _
+        "Content-Type: Application/json; charset=utf-8" _
+    )
+    
+    ' Appel HTTP
+    s = h.getHttp(url:=u, headers:=hAPI)
+ 
+    Debug.Print s
+    
+    ' Batterie de test d'erreur sur résultat de la requête
+    Call testErreur(resultat:=s)
+    
+    If status <> "ok" Then
+        MsgBox "Erreur : " & status, vbCritical, "MBF Analytics"
+        Exit Sub
+    End If
+        
+ ' --- 1) Déchiffrer le JSON en objet VBA ---
+Dim o As Object
+Set o = JsonConverter.ParseJson(s)
+
+' --- 2) Récupérer ou créer la feuille Excel ---
+Dim w As Worksheet
+Set w = getOrCreateSheet(sheetname)
+
+' --- 3) Nettoyer la feuille et écrire le ticker en haut ---
+w.Cells.Clear
+w.[A1].Value = "Ticker"
+w.[B1].Value = ticker
+
+' --- 4) Déclaration des variables de travail ---
+Dim r As Long
+Dim c As Long
+Dim key As Variant
+Dim periodKey As Variant
+
+r = 3   ' ligne de départ pour les données
+
+' --- 5) Boucle sur chaque période (clé du JSON) ---
+For Each periodKey In o.Keys
+    
+    ' ---- Titre principal : la période (date ou "ttm") ----
+    w.Cells(r, 1).Value = "Période : " & periodKey
+    w.Cells(r, 1).Font.Bold = True
+    r = r + 1
+    
+    ' ---- Ligne des intitulés (les noms de variables) ----
+    w.Cells(r, 1).Value = "Intitulés"
+    w.Cells(r, 1).Font.Bold = True
+    c = 2
+    For Each key In o(periodKey).Keys
+        w.Cells(r, c).Value = key
+        c = c + 1
+    Next key
+    r = r + 1
+    
+    ' ---- Ligne des valeurs ----
+    w.Cells(r, 1).Value = "Valeurs"
+    w.Cells(r, 1).Font.Bold = True
+    c = 2
+    For Each key In o(periodKey).Keys
+        w.Cells(r, c).Value = o(periodKey)(key)
+        c = c + 1
+    Next key
+    
+    ' ---- Saut de quelques lignes avant la période suivante ----
+    r = r + 3
+
+Next periodKey
+
+' --- 6) Ajuster la largeur des colonnes ---
+w.UsedRange.Columns.AutoFit
+
+
+
+End Sub
+
 
  '*************************************
 ' *************************************
@@ -2535,6 +2655,7 @@ End Sub
 'GMT-10' 'Honolulu'
 'GMT-11' 'NiuÈ'
 'GMT-12' 'Baker Island'"
+
 
 
 
