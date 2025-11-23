@@ -2656,6 +2656,344 @@ End Sub
 'GMT-11' 'NiuÈ'
 'GMT-12' 'Baker Island'"
 
+' ******************************************************************************
+' Méthode générique à personnaliser - Mortgage Calculator
+' ******************************************************************************
+' Auteur : Antoine Tardy + Raphael Reversat Morel
+' Lien vers la page API : https://rapidapi.com/apininjas/api/mortgage-calculator-by-api-ninjas
+' Params avec valeur d'exemple :
+'   sheetname = "MortCalc"                 ' Nom de la feuille principale
+'   loan_amount = "200000"                 ' Montant du prêt
+'   home_value = "250000"                  ' Valeur du bien
+'   downpayment = "50000"                  ' Apport personnel
+'   interest_rate = "3.5"                  ' Taux d'intérêt annuel (%)
+'   duration_years = "25"                  ' Durée du prêt (années)
+'   monthly_hoa = "150"                    ' Charges de copropriété mensuelles
+'   annual_property_tax = "2000"           ' Taxe foncière annuelle
+'   annual_home_insurance = "600"          ' Assurance habitation annuelle
+' Retour :
+'   1. Feuille "MortCalc" : Résumé de la simulation +  Tableau d'amortissement + Graphique
+'   2. Feuille "API Requests Log" : Historique des requêtes
+
+Public Sub mortgages_calc(Optional ByVal sheetname = "Mortgages Calculation", Optional ByVal loan_amount = "20000", Optional ByVal home_value = "0", Optional ByVal downpayment = "0", Optional ByVal interest_rate = "3.5", Optional ByVal duration_years = "0", Optional ByVal monthly_hoa = "0", Optional ByVal annual_property_tax = "0", Optional ByVal annual_home_insurance = "0")
+    
+    ' Parties de la Requête à l'API
+    ' Hote
+    hote = "mortgage-calculator-by-api-ninjas.p.rapidapi.com"
+    ' Endpoint?Query String avec Paramètres génériques en majuscule
+    epqs = "/v1/mortgagecalculator?loan_amount=LOANA&home_value=HOMEV&downpayment=DOWNPAY&interest_rate=ITRATE&duration_years=DURA&monthly_hoa=HOA&annual_property_tax=PROPTAX&annual_home_insurance=INSU" ' avec mot générique pour les paramètres
+    
+    ' Encodage URL des PARAMS
+    loan_amount = WorksheetFunction.EncodeURL(loan_amount)
+    home_value = WorksheetFunction.EncodeURL(home_value)
+    downpayment = WorksheetFunction.EncodeURL(downpayment)
+    interest_rate = WorksheetFunction.EncodeURL(interest_rate)
+    duration_years = WorksheetFunction.EncodeURL(duration_years)
+    monthly_hoa = WorksheetFunction.EncodeURL(monthly_hoa)
+    annual_property_tax = WorksheetFunction.EncodeURL(annual_property_tax)
+    annual_home_insurance = WorksheetFunction.EncodeURL(annual_home_insurance)
+
+    ' Etat de la connexion Rapide API
+    Call testErreur
+        
+    ' Intégration des PARAMS dans la Query String
+    epqs = Replace(epqs, "LOANA", loan_amount)
+    epqs = Replace(epqs, "HOMEV", home_value)
+    epqs = Replace(epqs, "DOWNPAY", downpayment)
+    epqs = Replace(epqs, "ITRATE", interest_rate)
+    epqs = Replace(epqs, "DURA", duration_years)
+    epqs = Replace(epqs, "HOA", monthly_hoa)
+    epqs = Replace(epqs, "PROPTAX", annual_property_tax)
+    epqs = Replace(epqs, "INSU", annual_home_insurance)
+    
+    u = "https://" & hote & epqs
+    hAPI = Array("X-Rapidapi-Key: " & apikey, "X-Rapidapi-Host: " & hote, "Content-Type: Application/json; charset=utf-8")
+    
+
+    s = h.getHttp(url:=u, headers:=hAPI)
+   
+
+    Debug.Print s
+    
+    ' Batterie de test d'erreur sur resultat de la requête
+    Call testErreur(resultat:=s)
+    
+    If status <> "ok" Then
+        MsgBox "Erreur : " & status, vbCritical, "MBF Analytics"
+        Exit Sub
+    End If
+        
+    ' Déchiffrement expression JSON en objet VBA
+    Dim o As Object
+    Set o = JsonConverter.ParseJson(s)
+
+    ' Chargement sur feuille Excel
+    
+    ' recherche feuille Excel ou création feuille
+    Set w = getOrCreateSheet(sheetname)
+    
+    ' Purger la feuille
+    w.Cells.Clear
+    
+' ******************************************************************************
+' 1. PRÉPARATION DES DONNÉES
+' ******************************************************************************
+    Dim decoded_loan As Double, decoded_rate As Double, decoded_duration As Long
+    Dim decoded_hoa As Double, decoded_proptax As Double, decoded_insu As Double
+    Dim monthlyPayment As Double, mortgageOnly As Double
+    Dim n As Long, calc_rate As Double
+    
+    decoded_loan = CDbl(Val(Replace(Replace(loan_amount, "+", " "), "%20", " ")))
+    decoded_rate = CDbl(Val(Replace(Replace(interest_rate, "+", " "), "%20", " ")))
+    decoded_duration = CLng(Val(Replace(Replace(duration_years, "+", " "), "%20", " ")))
+    decoded_hoa = CDbl(Val(Replace(Replace(monthly_hoa, "+", " "), "%20", " ")))
+    decoded_proptax = CDbl(Val(Replace(Replace(annual_property_tax, "+", " "), "%20", " ")))
+    decoded_insu = CDbl(Val(Replace(Replace(annual_home_insurance, "+", " "), "%20", " ")))
+
+    On Error Resume Next
+    monthlyPayment = CDbl(o("monthly_payment")("total"))
+    mortgageOnly = CDbl(o("monthly_payment")("mortgage"))
+    On Error GoTo 0
+
+    Dim totalPayments As Long
+    totalPayments = decoded_duration * 12
+    
+    If monthlyPayment = 0 Or mortgageOnly = 0 Then
+        calc_rate = decoded_rate / 100 / 12
+        If calc_rate = 0 Then
+            mortgageOnly = decoded_loan / totalPayments
+        Else
+            mortgageOnly = decoded_loan * (calc_rate * (1 + calc_rate) ^ totalPayments) / ((1 + calc_rate) ^ totalPayments - 1)
+        End If
+        If monthlyPayment = 0 Then monthlyPayment = mortgageOnly + decoded_hoa + (decoded_proptax / 12) + (decoded_insu / 12)
+    End If
+
+' ******************************************************************************
+' 2. LOGGING (HISTORIQUE) - FEUILLE SÉPARÉE
+' ******************************************************************************
+    Dim logSheet As Worksheet
+    Set logSheet = getOrCreateSheet("API Requests Log")
+    
+    If logSheet.Range("A1").Value <> "Date" Then
+        logSheet.Range("A1:L1").Value = Array("Date", "Emprunt", "Valeur Bien", "Apport", "Taux", "Durée", "HOA", "Taxe", "Assurance", "Mensualité", "Annuel", "Coût Crédit")
+        With logSheet.Range("A1:L1")
+            .Font.Bold = True
+            .Interior.Color = RGB(44, 62, 80)
+            .Font.Color = RGB(255, 255, 255)
+        End With
+    End If
+    
+    Dim nextRow As Long
+    nextRow = logSheet.Cells(logSheet.Rows.Count, 1).End(xlUp).row + 1
+    
+    Dim LogData(1 To 12) As Variant
+    LogData(1) = Now
+    LogData(2) = decoded_loan
+    LogData(3) = CDbl(Val(Replace(Replace(home_value, "+", " "), "%20", " ")))
+    LogData(4) = CDbl(Val(Replace(Replace(downpayment, "+", " "), "%20", " ")))
+    LogData(5) = decoded_rate / 100
+    LogData(6) = decoded_duration
+    LogData(7) = decoded_hoa
+    LogData(8) = decoded_proptax
+    LogData(9) = decoded_insu
+    On Error Resume Next
+    LogData(10) = CDbl(o("monthly_payment")("total"))
+    LogData(11) = CDbl(o("annual_payment")("total"))
+    LogData(12) = CDbl(o("total_interest_paid"))
+    On Error GoTo 0
+    
+    logSheet.Range("A" & nextRow).Resize(1, 12).Value = LogData
+    logSheet.Columns("A:L").AutoFit
+
+' ******************************************************************************
+' 3. FEUILLE PRINCIPALE (RÉSUMÉ + AMORTISSEMENT + GRAPHIQUE)
+' ******************************************************************************
+    Dim reportSheet As Worksheet
+    ' CORRECTION : On utilise directement le nom demandé (ex: "Mortcalc")
+    Set reportSheet = getOrCreateSheet(sheetname)
+    
+    ' On nettoie TOUT pour avoir une page blanche propre
+    reportSheet.Cells.Clear
+    
+    With reportSheet
+        ' --- A. RÉSUMÉ (En Haut) ---
+        With .Range("B2:C2")
+            .Merge
+            .Value = "RÉSULTAT DE LA SIMULATION"
+            .Font.Bold = True
+            .Font.Color = RGB(255, 255, 255)
+            .Interior.Color = RGB(44, 62, 80)
+            .HorizontalAlignment = xlCenter
+            .VerticalAlignment = xlCenter
+            .RowHeight = 20
+        End With
+        
+        Dim ResTab(1 To 4, 1 To 2) As Variant
+        ResTab(1, 1) = "Montant emprunté":   ResTab(1, 2) = decoded_loan
+        ResTab(2, 1) = "Taux d'intérêt":     ResTab(2, 2) = decoded_rate / 100
+        ResTab(3, 1) = "Durée":              ResTab(3, 2) = decoded_duration & " ans"
+        ResTab(4, 1) = "PAIEMENT MENSUEL":   ResTab(4, 2) = monthlyPayment
+            
+        .Range("B3:C6").Value = ResTab
+        
+        ' Style
+        With .Range("B3:C6")
+            .Borders.LineStyle = xlContinuous
+            .Borders.Color = RGB(100, 100, 100)
+        End With
+        .Range("B3:B6").Interior.Color = RGB(236, 240, 241)
+        .Range("B3:B6").Font.Bold = True
+        .Range("B6:C6").Font.Color = RGB(192, 57, 43)
+        .Range("B6:C6").Font.Bold = True
+        .Range("C3").NumberFormat = "#,##0.00 €"
+        .Range("C4").NumberFormat = "0.00%"
+        .Range("C6").NumberFormat = "#,##0.00 €"
+        
+        ' --- B. CALCUL AMORTISSEMENT ---
+        Dim DataArr() As Variant
+        ReDim DataArr(1 To totalPayments, 1 To 6)
+        
+        Dim balance As Double, interest As Double, principal As Double
+        Dim monthlyRate As Double, payDate As Date
+        Dim finalRowIndex As Long
+        
+        balance = decoded_loan
+        monthlyRate = decoded_rate / 100 / 12
+        payDate = Date
+        finalRowIndex = 0
+        
+        Dim k As Long
+        For k = 1 To totalPayments
+            payDate = DateAdd("m", 1, payDate)
+            interest = balance * monthlyRate
+            principal = mortgageOnly - interest
+            
+            If Round(balance - principal, 2) <= 0 Then
+                principal = balance
+                mortgageOnly = principal + interest
+                balance = 0
+            Else
+                balance = balance - principal
+            End If
+            
+            DataArr(k, 1) = k
+            DataArr(k, 2) = payDate
+            DataArr(k, 3) = mortgageOnly
+            DataArr(k, 4) = interest
+            DataArr(k, 5) = principal
+            DataArr(k, 6) = balance
+            
+            finalRowIndex = k
+            If balance = 0 Then Exit For
+        Next k
+        
+        ' --- C. TABLEAU DÉTAILLÉ (Ligne 9) ---
+        Dim startRow As Integer
+        startRow = 9
+        
+        .Range("A" & startRow).Value = "TABLEAU D'AMORTISSEMENT DÉTAILLÉ"
+        .Range("A" & startRow).Font.Bold = True
+        .Range("A" & startRow).Font.Size = 14
+        
+        Dim headerR As Integer
+        headerR = startRow + 2
+        
+        With .Range("A" & headerR & ":F" & headerR)
+            .Value = Array("N°", "Date", "Mensualité Crédit", "Intérêt", "Principal", "Solde Restant")
+            .Font.Bold = True
+            .Font.Color = RGB(255, 255, 255)
+            .Interior.Color = RGB(44, 62, 80)
+            .HorizontalAlignment = xlCenter
+            .RowHeight = 20
+        End With
+        
+        If finalRowIndex > 0 Then
+            .Range("A" & (headerR + 1)).Resize(finalRowIndex, 6).Value = DataArr
+            
+            Dim rowTotal As Long
+            rowTotal = headerR + 1 + finalRowIndex
+            .Cells(rowTotal, 1).Value = "TOTAUX"
+            .Cells(rowTotal, 3).Formula = "=SUM(C" & (headerR + 1) & ":C" & (rowTotal - 1) & ")"
+            .Cells(rowTotal, 4).Formula = "=SUM(D" & (headerR + 1) & ":D" & (rowTotal - 1) & ")"
+            .Cells(rowTotal, 5).Formula = "=SUM(E" & (headerR + 1) & ":E" & (rowTotal - 1) & ")"
+            .Cells(rowTotal, 6).Value = 0
+            
+            With .Range("A" & rowTotal & ":F" & rowTotal)
+                .Font.Bold = True
+                .Interior.Color = RGB(220, 220, 220)
+                .Borders.LineStyle = xlContinuous
+            End With
+            
+            Dim tableData As Range
+            Set tableData = .Range("A" & headerR).Resize(finalRowIndex + 2, 6)
+            tableData.Borders.LineStyle = xlContinuous
+            tableData.Borders.Color = RGB(150, 150, 150)
+            .Range("C" & (headerR + 1) & ":F" & rowTotal).NumberFormat = "#,##0.00 €"
+        End If
+        .Columns("A:F").AutoFit
+        
+      ' --- D. GRAPHIQUE ERGONOMIQUE (Dates + Aire Remplie) ---
+        Dim chartObj As ChartObject
+        ' On supprime tout ancien graphique pour éviter les doublons
+        If .ChartObjects.Count > 0 Then .ChartObjects.Delete
+        
+        ' On place le graphique à droite du résumé (Colonne H)
+        Set chartObj = .ChartObjects.Add(Left:=.Columns("H").Left, Top:=20, Width:=600, Height:=350)
+        
+        With chartObj.Chart
+            ' TYPE : Aire (Area) pour un effet "Volume de dette"
+            .ChartType = xlArea
+            
+            ' Source de données globale
+            .SetSourceData Source:=reportSheet.Range("A" & headerR & ":F" & (headerR + finalRowIndex))
+            
+            ' Nettoyage des séries automatiques
+            Do While .SeriesCollection.Count > 0: .SeriesCollection(1).Delete: Loop
+            
+            ' Création de la série "Solde Restant"
+            With .SeriesCollection.NewSeries
+                .Name = "Solde Restant"
+                ' AXE X : On prend la Colonne B (Dates) -> C'est ça qui change tout !
+                .XValues = reportSheet.Range("B" & (headerR + 1) & ":B" & (headerR + finalRowIndex))
+                ' AXE Y : Colonne F (Solde)
+                .Values = reportSheet.Range("F" & (headerR + 1) & ":F" & (headerR + finalRowIndex))
+            End With
+            
+            ' --- DESIGN ---
+            .HasTitle = True
+            .ChartTitle.Text = "Amortissement du Capital (Évolution dans le temps)"
+            .ChartTitle.Font.Size = 14
+            
+            ' Fond blanc et pas de bordure cadre
+            .ChartArea.Format.Line.Visible = msoFalse
+            .PlotArea.Format.Fill.ForeColor.RGB = RGB(255, 255, 255)
+            
+            ' Couleur de l'aire (Bleu moderne avec transparence)
+            With .SeriesCollection(1).Format.Fill
+                .ForeColor.RGB = RGB(52, 152, 219)
+                .Transparency = 0.2
+            End With
+            
+            ' Axe X (Dates) : Affichage par année
+            With .Axes(xlCategory)
+                .TickLabels.NumberFormat = "yyyy"
+                .TickLabelPosition = xlLow
+                .MajorTickMark = xlNone
+            End With
+            
+            ' Axe Y (Montants) : Format Euro et grille discrète
+            With .Axes(xlValue)
+                .TickLabels.NumberFormat = "#,##0 €"
+                .MajorGridlines.Border.Color = RGB(230, 230, 230)
+            End With
+            
+            .HasLegend = False
+        End With
+    End With ' Fin du With reportSheet
+
+    MsgBox "Calcul terminé avec succès !", vbInformation, "MBF Analytics"
+
+End Sub
 
 
 
