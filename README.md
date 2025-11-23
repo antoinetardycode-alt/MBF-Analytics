@@ -85,7 +85,11 @@ Sub test_MBFanalytics()
     
     Call m.Options("Options", "NVDA", "en-US", "US")
 
-End Sub
+    ' Clé Mortgage
+    m.initKey "1daab989d1msh680a362699cecc2p196970jsn6ae9b7239ca0"
+    
+    ' Exemple invocation Mortgage Calculator (Antoine & Raphael)
+    Call m.mortgages_calc(sheetname:="MortCalc", loan_amount:="20000", home_value:="20000", downpayment:="0", interest_rate:="3.5", duration_years:="28", monthly_hoa:="149", annual_property_tax:="2500", annual_home_insurance:="1000")
 
 
 End Sub
