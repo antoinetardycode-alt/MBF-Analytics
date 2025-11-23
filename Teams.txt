@@ -47,8 +47,8 @@ Team CAJOE
 Madoff
 - Antoine Tardy
 - Raphaël Reversat-Morel
-- Lien API : https://rapidapi.com/WRT/api/crypto-arbitrage/playground/apiendpoint_32bbfeb6-70ba-487c-9ac1-7d4424ff1f2c
-- Sonde différents brokers crypto afin de trouver des opportunités d'arbitrage.
+- Lien API : https://rapidapi.com/apininjas/api/mortgage-calculator-by-api-ninjas/playground/apiendpoint_48bf073c-af6a-4049-94c8-7942c385fa14
+- C'est un simulateur de solvabilité clé en main qui génère instantanément un audit financier complet d'un projet immobilier via RapidAPI, sans aucune formule Excel manuelle.
 
 Team SA
 - Alissia
