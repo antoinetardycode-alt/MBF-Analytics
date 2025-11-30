@@ -2656,6 +2656,286 @@ End Sub
 'GMT-11' 'NiuÈ'
 'GMT-12' 'Baker Island'"
 
+' **************************************************
+' MBF Analytics
+' Banque de méthodes de Données financières en ligne
+' Simple utilisation
+' Robuste
+' Personnalisable API Key
+' ***************************************************
+
+
+' References :  Outils > References
+' 1- Microsoft HTML Object Library
+' 2- Microsoft WinHTTP Services, version 5.1
+
+' Classe
+' 1- Webtool
+' 2- Dictionnary
+
+
+' Constantes des la classe
+Private Const keylen As Integer = 50
+
+' Propriétés de la classe
+Private apikey As String    ' code perso pour se connecter à Rapid API
+Private h As Object         ' h objet pour les requêtes HTTP
+Public status As String     ' état de la connection avec Rapid API :
+                            ' API Key invalide : problème de clé API
+                            ' Compte épuisé : plus de requêtes possible
+                            ' Paramètres de requête incohérents : Invalid request
+                            ' Endpoint Inconnue : Endpoint * does not exist
+                            ' Erreur non reconnue
+
+' ******************
+' Méthodes Internes
+' ******************
+' Constructeur de la classe
+Private Sub Class_Initialize()
+    Set h = New WebTool
+    status = "ok"
+End Sub
+
+
+
+' ------------------------------------------------------------
+' Fonction de recherche ou création d'une feuille Excel nommée
+Private Function getOrCreateSheet(ByVal sheetname As String) As Worksheet
+    Dim w As Worksheet
+    
+    Set w = Nothing
+    
+    For Each w In Worksheets
+        If w.Name = sheetname Then Exit For
+    Next w
+    
+    If w Is Nothing Then
+        Set w = Worksheets.Add
+        w.Name = sheetname
+    End If
+
+    Set getOrCreateSheet = w
+End Function
+
+
+' ***********************************************
+' ***********************************************
+' Collection de Méthodes financières de la classe
+' ***********************************************
+' ***********************************************
+
+Private Sub testErreur(Optional ByVal resultat As String = "")
+
+    status = "ok"
+
+    ' --- Erreurs Générales (Code existant des autres groupes) ---
+    If resultat Like "*not subscribed*" Then status = "Souscription à l'API nécessaire"
+    If resultat Like "*have exceeded*" And resultat Like "*quota*" Then status = "Quota dépassé"
+    If resultat Like "*unauthorized*" Or resultat Like "*invalid key*" Then status = "Clé API invalide"
+    ' ... (autres erreurs génériques ici) ...
+
+
+    ' --- VOS AJOUTS ---
+    ' Auteur : Antoine Tardy & Raphael Reversat Morel
+    
+    ' 1. Erreur d'URL (celle que tu as eue tout à l'heure)
+    If resultat Like "*Endpoint*" And resultat Like "*does not exist*" Then status = "Endpoint inconnue (Vérifier URL)"
+    
+    ' 2. Erreur générique de requête
+    If resultat Like "*Invalid request*" Then status = "Paramètres incohérents"
+    
+    ' 3. Oubli d'un paramètre obligatoire (ex: oubli de duration_years)
+    If resultat Like "*Missing parameter*" Then status = "Paramètre manquant dans la requête"
+    
+    ' 4. Erreur de type (ex: envoyer "vingt" au lieu de "20") - Typique API Ninjas
+    If resultat Like "*must be a number*" Or resultat Like "*invalid literal*" Then status = "Format numérique invalide (Vérifiez vos entrées)"
+    
+    ' 5. Erreur de logique mathématique (ex: durée négative)
+    If resultat Like "*must be positive*" Or resultat Like "*greater than zero*" Then status = "Les valeurs doivent être positives"
+    
+    ' 6. Erreur serveur spécifique (Bad Gateway)
+    If resultat Like "*502 Bad Gateway*" Then status = "Erreur passerelle API (502)"
+
+
+    If status <> "ok" Then
+        MsgBox "Erreur : " & status & vbCrLf & vbCrLf & resultat, vbCritical, "MBF Analytics"
+        End
+    End If
+
+End Sub
+Public Sub initKey(key As String)
+    
+    apikey = Trim(key)
+    
+    If Len(apikey) <> keylen Then
+        status = "API Key invalide"
+        MsgBox "Erreur : " & status, vbCritical, "MBF Analytics"
+        End
+    Else
+        status = "ok"
+    End If
+        
+    Set h = New WebTool
+
+End Sub
+
+' *************************************
+' Méthode générique à personnaliser
+' *************************************
+' Auteur : Antoine Tardy + Raphael Reversat Morel
+' Lien vers la page API : https://rapidapi.com/apininjas/api/mortgage-calculator-by-api-ninjas
+' Params avec valeur d'exemple :
+'  sheetname = "MortCalc"
+'  loan_amount = "200000"
+'  home_value = "250000"
+'  downpayment = "50000"
+'  interest_rate = "3.5"
+'  duration_years = "25"
+'  monthly_hoa = "150"
+'  annual_property_tax = "2000"
+'  annual_home_insurance = "600"
+' Retour :
+'  résultats formatés sur feuille excel sheetname
+'
+Public Sub mortgages_calc(Optional ByVal sheetname As String = "MortCalc", _
+                          Optional ByVal loan_amount As String = "200000", _
+                          Optional ByVal home_value As String = "250000", _
+                          Optional ByVal downpayment As String = "50000", _
+                          Optional ByVal interest_rate As String = "3.5", _
+                          Optional ByVal duration_years As String = "25", _
+                          Optional ByVal monthly_hoa As String = "150", _
+                          Optional ByVal annual_property_tax As String = "2000", _
+                          Optional ByVal annual_home_insurance As String = "600")
+    
+    ' Parties de la Requête à l'API
+    ' Hote
+    hote = "mortgage-calculator-by-api-ninjas.p.rapidapi.com"
+    ' Endpoint?Query String avec Paramètres génériques en majuscule
+    epqs = "/v1/mortgagecalculator?loan_amount=LOAN_AMOUNT&home_value=HOME_VALUE&downpayment=DOWNPAYMENT&interest_rate=INTEREST_RATE&duration_years=DURATION_YEARS&monthly_hoa=MONTHLY_HOA&annual_property_tax=ANNUAL_PROPERTY_TAX&annual_home_insurance=ANNUAL_HOME_INSURANCE"
+    
+    ' Encodage URL des PARAMS (Création de variables temporaires E_...)
+    ' On respecte la consigne du prof : ne pas écraser la variable d'origine
+    Dim E_loan_amount As String: E_loan_amount = WorksheetFunction.EncodeURL(loan_amount)
+    Dim E_home_value As String: E_home_value = WorksheetFunction.EncodeURL(home_value)
+    Dim E_downpayment As String: E_downpayment = WorksheetFunction.EncodeURL(downpayment)
+    Dim E_interest_rate As String: E_interest_rate = WorksheetFunction.EncodeURL(interest_rate)
+    Dim E_duration_years As String: E_duration_years = WorksheetFunction.EncodeURL(duration_years)
+    Dim E_monthly_hoa As String: E_monthly_hoa = WorksheetFunction.EncodeURL(monthly_hoa)
+    Dim E_annual_property_tax As String: E_annual_property_tax = WorksheetFunction.EncodeURL(annual_property_tax)
+    Dim E_annual_home_insurance As String: E_annual_home_insurance = WorksheetFunction.EncodeURL(annual_home_insurance)
+    
+    ' Etat de la connexion Rapide API
+    Call testErreur
+        
+    ' Intégration des PARAMS encodés (E_...) dans la Query String
+    epqs = Replace(epqs, "LOAN_AMOUNT", E_loan_amount)
+    epqs = Replace(epqs, "HOME_VALUE", E_home_value)
+    epqs = Replace(epqs, "DOWNPAYMENT", E_downpayment)
+    epqs = Replace(epqs, "INTEREST_RATE", E_interest_rate)
+    epqs = Replace(epqs, "DURATION_YEARS", E_duration_years)
+    epqs = Replace(epqs, "MONTHLY_HOA", E_monthly_hoa)
+    epqs = Replace(epqs, "ANNUAL_PROPERTY_TAX", E_annual_property_tax)
+    epqs = Replace(epqs, "ANNUAL_HOME_INSURANCE", E_annual_home_insurance)
+        
+    u = "https://" & hote & epqs
+    hAPI = Array("X-Rapidapi-Key: " & apikey, "X-Rapidapi-Host: " & hote, "Content-Type: Application/json; charset=utf-8")
+    
+    s = h.getHttp(url:=u, headers:=hAPI)
+ 
+    Debug.Print s
+    
+    ' Batterie de test d'erreur sur resultat de la requête
+    Call testErreur(resultat:=s)
+    
+    If status <> "ok" Then
+        MsgBox "Erreur : " & status, vbCritical, "MBF Analytics"
+        Exit Sub
+    End If
+        
+    ' Déchiffrement expression JSON en objet VBA
+    Dim o As Object
+    Set o = JsonConverter.ParseJson(s)
+
+    ' Chargement sur feuille Excel
+    
+    ' recherche feuille Excel ou création feuille
+    Set w = getOrCreateSheet(sheetname)
+    
+    ' Purger la feuille
+    w.Cells.Clear
+    
+    ' Inscrire les paramètres de la requête API (On utilise les variables PROPRES, pas les E_...)
+    w.[A1] = "Description"
+    w.[B1] = "Valeur"
+    w.[C1] = "Type"
+    
+    w.[A2] = "Montant Prêt": w.[B2] = loan_amount: w.[C2] = "Paramètre"
+    w.[A3] = "Valeur Bien": w.[B3] = home_value: w.[C3] = "Paramètre"
+    w.[A4] = "Apport": w.[B4] = downpayment: w.[C4] = "Paramètre"
+    w.[A5] = "Taux": w.[B5] = interest_rate: w.[C5] = "Paramètre"
+    w.[A6] = "Durée": w.[B6] = duration_years: w.[C6] = "Paramètre"
+    w.[A7] = "Charges Mens.": w.[B7] = monthly_hoa: w.[C7] = "Paramètre"
+    w.[A8] = "Taxe Foncière": w.[B8] = annual_property_tax: w.[C8] = "Paramètre"
+    w.[A9] = "Assurance Hab.": w.[B9] = annual_home_insurance: w.[C9] = "Paramètre"
+
+    ' Puis écire toutes les informations sur la feuille w
+    w.[A10] = "Mensualité Totale"
+    w.[B10] = o("monthly_payment")("total")
+    w.[C10] = "RESULTAT API"
+    
+    w.[A11] = "Coût Annuel"
+    w.[B11] = o("annual_payment")("total")
+    w.[C11] = "RESULTAT API"
+    
+    w.[A12] = "Intérêts Totaux Payés"
+    w.[B12] = o("total_interest_paid")
+    w.[C12] = "RESULTAT API"
+    
+    Dim tbl As ListObject
+    Set tbl = w.ListObjects.Add(xlSrcRange, w.Range("A1:C12"), , xlYes)
+    tbl.Name = "ResultatsMortgage"
+    tbl.TableStyle = "TableStyleMedium9"
+    w.Columns("A:C").AutoFit
+    
+End Sub
+
+Private Sub testErreur(Optional ByVal resultat As String = "")
+
+    status = "ok"
+
+    ' --- Erreurs Générales (Code existant des autres groupes) ---
+    If resultat Like "*not subscribed*" Then status = "Souscription à l'API nécessaire"
+    If resultat Like "*have exceeded*" And resultat Like "*quota*" Then status = "Quota dépassé"
+    If resultat Like "*unauthorized*" Or resultat Like "*invalid key*" Then status = "Clé API invalide"
+    ' ... (autres erreurs génériques ici) ...
+
+    ' Auteur : Antoine Tardy & Raphael Reversat Morel
+    
+    ' 1. Erreur d'URL (celle que tu as eue tout à l'heure)
+    If resultat Like "*Endpoint*" And resultat Like "*does not exist*" Then status = "Endpoint inconnue (Vérifier URL)"
+    
+    ' 2. Erreur générique de requête
+    If resultat Like "*Invalid request*" Then status = "Paramètres incohérents"
+    
+    ' 3. Oubli d'un paramètre obligatoire (ex: oubli de duration_years)
+    If resultat Like "*Missing parameter*" Then status = "Paramètre manquant dans la requête"
+    
+    ' 4. Erreur de type (ex: envoyer "vingt" au lieu de "20") - Typique API Ninjas
+    If resultat Like "*must be a number*" Or resultat Like "*invalid literal*" Then status = "Format numérique invalide (Vérifiez vos entrées)"
+    
+    ' 5. Erreur de logique mathématique (ex: durée négative)
+    If resultat Like "*must be positive*" Or resultat Like "*greater than zero*" Then status = "Les valeurs doivent être positives"
+    
+    ' 6. Erreur serveur spécifique (Bad Gateway)
+    If resultat Like "*502 Bad Gateway*" Then status = "Erreur passerelle API (502)"
+
+
+    If status <> "ok" Then
+        MsgBox "Erreur : " & status & vbCrLf & vbCrLf & resultat, vbCritical, "MBF Analytics"
+        End
+    End If
+
+End Sub
 
 
 
