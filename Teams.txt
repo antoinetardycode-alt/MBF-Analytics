@@ -54,8 +54,9 @@ Team CAJOE
 Madoff
 - Antoine Tardy
 - Raphaël Reversat-Morel
-- Lien API : https://rapidapi.com/WRT/api/crypto-arbitrage/playground/apiendpoint_32bbfeb6-70ba-487c-9ac1-7d4424ff1f2c
-- Sonde différents brokers crypto afin de trouver des opportunités d'arbitrage.
+- Lien API : 	
+https://mortgage-calculator-by-api-ninjas.p.rapidapi.com/v1/mortgagecalculator?loan_amount=200000&interest_rate=3.5
+- Description : Permet de calculer les interets payés sur un emprunt en fonction de vos critères
 
 Team SA
 - Alissia
